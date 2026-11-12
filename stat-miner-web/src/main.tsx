@@ -10,6 +10,7 @@ import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import Player from "./pages/Player";
 import Props from "./pages/Props";
+import SportHub from "./pages/SportHub";
 
 ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
   <React.StrictMode>
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="props" element={<Props />} />
           <Route path="how-it-works" element={<HowItWorks />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="sports/:sport" element={<SportHub />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

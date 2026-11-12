@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { sportForPath } from "../lib/sports";
 import Logo from "./Logo";
 import PlayerSearch from "./PlayerSearch";
+import SportBar from "./SportBar";
 
-const NAV = [
+const NBA_NAV = [
   { to: "/leaderboard", label: "Leaderboard" },
   { to: "/props", label: "Props" },
   { to: "/how-it-works", label: "How it works" },
-  { to: "/dashboard", label: "Multi-sport", badge: "Demo" },
 ];
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -18,6 +19,8 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 const Layout: React.FC = () => {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isNba = sportForPath(pathname) === "nba";
+  const nav = isNba ? NBA_NAV : [];
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -27,31 +30,29 @@ const Layout: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 font-sans text-slate-200">
       <header className="sticky top-0 z-20 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur">
+        <SportBar />
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
           <Link to="/" aria-label="Gravity Score home" className="shrink-0">
             <Logo />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-            {NAV.map((item) => (
+            {nav.map((item) => (
               <NavLink key={item.to} to={item.to} className={navClass}>
                 {item.label}
-                {item.badge && (
-                  <span className="ml-1.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-amber-300">
-                    {item.badge}
-                  </span>
-                )}
               </NavLink>
             ))}
           </nav>
 
-          <div className="ml-auto hidden w-64 md:block">
-            <PlayerSearch />
-          </div>
+          {isNba && (
+            <div className="ml-auto hidden w-64 md:block">
+              <PlayerSearch />
+            </div>
+          )}
 
           <button
             type="button"
-            className="ml-auto rounded-lg border border-slate-700 p-2 text-slate-300 md:hidden"
+            className={`ml-auto rounded-lg border border-slate-700 p-2 text-slate-300 md:hidden ${isNba ? "" : "hidden"}`}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((o) => !o)}
@@ -69,14 +70,15 @@ const Layout: React.FC = () => {
         {menuOpen && (
           <div className="space-y-3 border-t border-slate-800 px-4 pb-4 pt-3 md:hidden">
             <PlayerSearch onNavigate={() => setMenuOpen(false)} />
-            <nav className="flex flex-col gap-1" aria-label="Mobile">
-              {NAV.map((item) => (
-                <NavLink key={item.to} to={item.to} className={navClass}>
-                  {item.label}
-                  {item.badge && <span className="ml-2 text-[0.65rem] uppercase text-amber-300">{item.badge}</span>}
-                </NavLink>
-              ))}
-            </nav>
+            {nav.length > 0 && (
+              <nav className="flex flex-col gap-1" aria-label="Mobile">
+                {nav.map((item) => (
+                  <NavLink key={item.to} to={item.to} className={navClass}>
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
+            )}
           </div>
         )}
       </header>
@@ -87,7 +89,7 @@ const Layout: React.FC = () => {
 
       <footer className="border-t border-slate-800/80">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {new Date().getFullYear()} Gravity Score. Stats from NBA.com. Not affiliated with the NBA.</p>
+          <p>© {new Date().getFullYear()} Gravity Score. NBA stats from NBA.com and ESPN. Not affiliated with any league.</p>
           <p>For entertainment and analysis only. Not betting advice.</p>
         </div>
       </footer>
