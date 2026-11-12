@@ -95,6 +95,23 @@ python scripts/refresh_nba_snapshot.py 2025-26    # a specific season
 
 To get live data in production instead, set `NBA_API_PROXY` to a residential/HTTP proxy.
 
+## Props heat map (`/props`)
+
+For tonight's NBA slate, the props page shows how often each player cleared a line (last 5/10/20 games, this season, and head-to-head vs tonight's opponent), the opponent's defense for that stat, and a matchup-adjusted probability of going over.
+
+- **Game logs** come from ESPN's public box scores (NBA.com blocks many IPs) and are stored in `stat-miner-app/backend/data/gamelogs/`. Finished games never change, so each is downloaded once; the API adds new games automatically.
+- **Sportsbook lines** come from The Odds API (`ODDS_API_KEY`). They cost credits (1 per stat type per game), so they are only fetched by the daily refresh, never by page views:
+
+  ```bash
+  cd stat-miner-app
+  python scripts/refresh_props.py          # run each morning; free if today's lines are already saved
+  python scripts/refresh_props.py --force  # refetch today's lines (spends credits)
+  ```
+
+  In production, call `POST /props/refresh` with the `X-Admin-Token` header instead (e.g. from a free daily cron at cron-job.org). Lines are saved in `backend/data/props/`; on Render's free plan that disk resets on restart, so the cron should run after the service wakes.
+- `PROPS_DAILY_CREDIT_BUDGET` (default 16, fits the 500/month free plan) caps credits per day. Every game gets the same number of stat types, in the order of `PROPS_MARKETS` (default points, rebounds, assists, threes, PRA, ...). With 10 games and 16 credits that's points only; stats without sportsbook lines start at the player's season average and can be edited on the page.
+- **Model check:** `python scripts/backtest_props_model.py 2025-26` replays a past season with the same probability model and prints accuracy and calibration.
+
 ## Deploying
 
 The repo needs to be on GitHub (or GitLab/Bitbucket) for both services.

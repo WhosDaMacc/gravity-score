@@ -197,6 +197,52 @@ def _match_player(name: str, candidates: List[Dict[str, Any]]) -> Optional[Dict[
     return loose[0] if len(loose) == 1 else None
 
 
+POSITION_GROUPS = ("G", "F", "C")
+
+
+def defense_profile(season: str) -> Dict[str, Any]:
+    """
+    Per-game stats each team allows, overall ("ALL") and to guards, forwards and
+    centers, plus the league averages to compare against.
+    """
+    games, positions = espn.season_games(season)
+    width = len(espn.STAT_FIELDS)
+    groups = ("ALL", *POSITION_GROUPS)
+    sums: Dict[str, Dict[str, List[float]]] = {}
+    counts: Counter = Counter()
+
+    for game in games.values():
+        home, away = game["home"], game["away"]
+        allowed = {team: {g: [0.0] * width for g in groups} for team in (home, away)}
+        for athlete_id, _name, team, *stats in game["players"]:
+            defender = away if team == home else home
+            pos = positions.get(athlete_id, "")
+            for g in ("ALL", pos) if pos in POSITION_GROUPS else ("ALL",):
+                acc = allowed[defender][g]
+                for i, value in enumerate(stats):
+                    acc[i] += value
+        for team, by_group in allowed.items():
+            counts[team] += 1
+            team_sums = sums.setdefault(team, {g: [0.0] * width for g in groups})
+            for g in groups:
+                team_sums[g] = [a + b for a, b in zip(team_sums[g], by_group[g])]
+
+    total_games = sum(counts.values())
+    return {
+        "season": season,
+        "fields": espn.STAT_FIELDS,
+        "games": dict(counts),
+        "allowed": {
+            team: {g: [round(v / counts[team], 2) for v in vals] for g, vals in by_group.items()}
+            for team, by_group in sums.items()
+        },
+        "league": {
+            g: [round(sum(sums[t][g][i] for t in sums) / total_games, 2) for i in range(width)]
+            for g in groups
+        } if total_games else {},
+    }
+
+
 def build_board(day: Optional[date] = None) -> Dict[str, Any]:
     day = day or espn.today_eastern()
     cached = _board_cache.get(day.isoformat())
@@ -273,6 +319,7 @@ def build_board(day: Optional[date] = None) -> Dict[str, Any]:
             board_players.append({
                 "id": entry["id"],
                 "name": p["name"],
+                "pos": p["pos"],
                 "team": p["team"],
                 "opp": opp,
                 "home": p["team"] == home["abbr"],
@@ -295,6 +342,7 @@ def build_board(day: Optional[date] = None) -> Dict[str, Any]:
             "credits_remaining": lines.get("credits_remaining"),
             "markets": sorted({m for e in lines["events"] for m in e["markets"]}, key=list(MARKETS).index),
         } if lines else None,
+        "defense": defense_profile(season),
         "unmatched_props": sorted(set(unmatched)),
         "logs_through": espn.store_status(season),
     }

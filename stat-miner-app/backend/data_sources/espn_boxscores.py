@@ -139,6 +139,7 @@ def fetch_boxscore(client: httpx.Client, game_id: str) -> List[Dict[str, Any]]:
                 lines.append({
                     "id": athlete["athlete"]["id"],
                     "name": athlete["athlete"]["displayName"],
+                    "pos": (athlete["athlete"].get("position") or {}).get("abbreviation", ""),
                     "team": team,
                     "stats": [stats[f] for f in STAT_FIELDS],
                 })
@@ -155,7 +156,9 @@ def _load_store(season: str) -> Dict[str, Any]:
         if path.exists():
             _stores[season] = json.loads(path.read_text(encoding="utf-8"))
         else:
-            _stores[season] = {"season": season, "fields": STAT_FIELDS, "synced_through": None, "games": {}}
+            _stores[season] = {
+                "season": season, "fields": STAT_FIELDS, "synced_through": None, "games": {}, "positions": {},
+            }
     return _stores[season]
 
 
@@ -179,10 +182,16 @@ def sync_season(season: str, force: bool = False) -> Dict[str, Any]:
         season_end = date(int(season[:4]) + 1, 4, 30)
         yesterday = today_eastern() - timedelta(days=1)
         end = min(season_end, today_eastern())
+        # Stores saved before positions were tracked get every game refetched once.
+        refetch_all = "positions" not in store
+        store.setdefault("positions", {})
         synced = store.get("synced_through")
-        if synced and date.fromisoformat(synced) >= season_end:
+        if synced and date.fromisoformat(synced) >= season_end and not refetch_all:
             return store
-        start = max(season_start, date.fromisoformat(synced) - timedelta(days=1)) if synced else season_start
+        if synced and not refetch_all:
+            start = max(season_start, date.fromisoformat(synced) - timedelta(days=1))
+        else:
+            start = season_start
         if start > end:
             return store
 
@@ -191,7 +200,8 @@ def sync_season(season: str, force: bool = False) -> Dict[str, Any]:
             schedule = [g for games in pool.map(lambda d: fetch_scoreboard(client, d), days) for g in games]
             todo = [
                 g for g in schedule
-                if g["season_type"] == REGULAR_SEASON and g["completed"] and g["id"] not in store["games"]
+                if g["season_type"] == REGULAR_SEASON and g["completed"]
+                and (refetch_all or g["id"] not in store["games"])
             ]
 
             def load(game: Dict[str, Any]) -> tuple[Dict[str, Any], List[Dict[str, Any]]]:
@@ -205,6 +215,9 @@ def sync_season(season: str, force: bool = False) -> Dict[str, Any]:
                     "away": game["away"]["abbr"],
                     "players": [[p["id"], p["name"], p["team"], *p["stats"]] for p in lines],
                 }
+                for p in lines:
+                    if p["pos"]:
+                        store["positions"][p["id"]] = p["pos"]
 
         store["synced_through"] = min(yesterday, season_end).isoformat()
         _save_store(store)
@@ -219,11 +232,15 @@ def player_logs(seasons: List[str]) -> Dict[str, Dict[str, Any]]:
     players: Dict[str, Dict[str, Any]] = {}
     for season in seasons:
         store = _load_store(season)
+        positions = store.get("positions", {})
         for game in store["games"].values():
             for row in game["players"]:
                 athlete_id, name, team, *stats = row
                 is_home = team == game["home"]
-                entry = players.setdefault(athlete_id, {"name": name, "team": team, "logs": [], "latest": ""})
+                entry = players.setdefault(
+                    athlete_id, {"name": name, "team": team, "pos": "", "logs": [], "latest": ""},
+                )
+                entry["pos"] = entry["pos"] or position_group(positions.get(athlete_id, ""))
                 entry["logs"].append({
                     "date": game["date"],
                     "season": season,
@@ -236,6 +253,17 @@ def player_logs(seasons: List[str]) -> Dict[str, Dict[str, Any]]:
     for entry in players.values():
         entry["logs"].sort(key=lambda log: log["date"], reverse=True)
     return players
+
+
+def position_group(pos: str) -> str:
+    """Collapse ESPN positions (G, F, C, occasionally PG/SF/...) to G, F or C."""
+    return pos[-1] if pos and pos[-1] in "GFC" else ""
+
+
+def season_games(season: str) -> tuple[Dict[str, Any], Dict[str, str]]:
+    """Stored games and athlete position groups (G/F/C) for a season."""
+    store = _load_store(season)
+    return store["games"], {k: position_group(v) for k, v in store.get("positions", {}).items()}
 
 
 def scoreboard_for(day: date) -> List[Dict[str, Any]]:

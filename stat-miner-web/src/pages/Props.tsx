@@ -1,18 +1,25 @@
-﻿import React, { useMemo, useState } from "react";
+﻿import React, { Fragment, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ErrorState, Spinner } from "../components/StatusViews";
+import { ordinal } from "../lib/format";
 import { useDocumentTitle, usePropsBoard } from "../lib/hooks";
 import {
   analyze,
   defaultLine,
   heatStyle,
   lean,
+  matchupFor,
+  matchupTone,
   parseLogs,
+  POSITION_NAMES,
+  positionGroup,
+  spreadUsed,
   STAT_BY_KEY,
   STATS,
   WINDOWS,
   type GameLog,
   type HitRate,
+  type Matchup,
   type PropAnalysis,
   type PropLine,
   type PropsBoard,
@@ -21,10 +28,15 @@ import {
   type WindowKey,
 } from "../lib/props";
 
-type SortKey = "clear" | "line" | "avg10" | WindowKey;
+type SortKey = "prob" | "clear" | "line" | "proj" | "matchup" | WindowKey;
 type Row = { player: PropsPlayer; stat: StatKey; book?: PropLine; analysis: PropAnalysis; edited: boolean };
 
 const pct = (rate: number | null) => (rate === null ? "—" : `${Math.round(rate * 100)}%`);
+const signedPct = (factor: number) => {
+  const p = Math.round((factor - 1) * 100);
+  return p === 0 ? "0%" : `${p > 0 ? "+" : "−"}${Math.abs(p)}%`;
+};
+const rowKey = (row: Row) => `${row.player.id}:${row.stat}`;
 
 const HeatCell: React.FC<{ hr: HitRate; className?: string }> = ({ hr, className = "" }) => (
   <td className={`px-1 py-1 ${className}`}>
@@ -35,11 +47,21 @@ const HeatCell: React.FC<{ hr: HitRate; className?: string }> = ({ hr, className
   </td>
 );
 
-const ClearCell: React.FC<{ clear: number | null }> = ({ clear }) => {
-  const side = lean(clear);
+const MatchupBadge: React.FC<{ m: Matchup | null; opp: string }> = ({ m, opp }) => (
+  <div
+    className={`inline-flex flex-col rounded-md px-2 py-1 text-center leading-tight ${matchupTone(m)}`}
+    title={m ? `${opp} allows ${m.allowed.toFixed(1)} per game (league ${m.league.toFixed(1)}). Rank: 1st allows the least.` : "No defense data yet"}
+  >
+    <span className="text-sm font-bold tabular-nums">{m ? signedPct(m.factor) : "—"}</span>
+    <span className="text-[0.6rem] opacity-80">{m ? `${opp} ${ordinal(m.rank)}` : ""}</span>
+  </div>
+);
+
+const ProbCell: React.FC<{ prob: number | null }> = ({ prob }) => {
+  const side = lean(prob);
   return (
     <td className="px-2 py-1 text-right">
-      <div className="text-lg font-black tabular-nums text-white">{pct(clear)}</div>
+      <div className="text-lg font-black tabular-nums text-white">{pct(prob)}</div>
       {side && (
         <div className={`text-[0.65rem] font-bold uppercase tracking-wider ${side === "Over" ? "text-emerald-300" : "text-rose-300"}`}>
           {side}
@@ -72,6 +94,7 @@ const LineInput: React.FC<{ row: Row; onChange: (v: number | null) => void }> = 
       step={0.5}
       min={0}
       value={row.analysis.line}
+      onClick={(e) => e.stopPropagation()}
       onChange={(e) => {
         const v = Number(e.target.value);
         onChange(Number.isFinite(v) ? v : null);
@@ -80,7 +103,15 @@ const LineInput: React.FC<{ row: Row; onChange: (v: number | null) => void }> = 
       className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm font-semibold tabular-nums text-white outline-none focus:border-emerald-500"
     />
     {row.edited ? (
-      <button type="button" onClick={() => onChange(null)} className="text-[0.6rem] font-bold uppercase text-amber-300 hover:text-white" title="Reset line">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onChange(null);
+        }}
+        className="whitespace-nowrap text-[0.6rem] font-bold uppercase text-amber-300 hover:text-white"
+        title="Reset line"
+      >
         Edited ×
       </button>
     ) : row.book ? (
@@ -98,11 +129,88 @@ const LineInput: React.FC<{ row: Row; onChange: (v: number | null) => void }> = 
   </div>
 );
 
+const MatchupDetail: React.FC<{ row: Row; compact?: boolean }> = ({ row, compact }) => {
+  const { analysis: a, player } = row;
+  const stat = STAT_BY_KEY[row.stat];
+  const m = a.matchup;
+  const p = a.projection;
+  const fmt1 = (v: number | null) => (v === null ? "—" : v.toFixed(1));
+  return (
+    <div className={`grid gap-4 p-4 text-sm text-slate-300 ${compact ? "" : "md:grid-cols-3"}`}>
+      <div>
+        <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-500">Projection</h3>
+        {p ? (
+          <p>
+            Recent form <span className="font-semibold text-white">{fmt1(p.base)}</span> {stat.label}{" "}
+            <span className="text-slate-500">(L5 {fmt1(p.l5)} · L10 {fmt1(p.l10)} · season {fmt1(p.season)})</span>
+            {m && <> × matchup {m.factor.toFixed(2)}</>} ={" "}
+            <span className="font-semibold text-white">{p.adjusted.toFixed(1)}</span> projected, modeled at ±
+            {spreadUsed(p.adjusted, p.sd).toFixed(1)} game to game
+            {p.adjusted < 6 && " (low-count stat)"}. Chance of going over {a.line}:{" "}
+            <span className="font-bold text-white">{pct(a.prob)}</span>
+            {a.prob !== null && a.prob > 0.65 && <span className="text-slate-500"> (tempered at the high end, see below)</span>}.
+          </p>
+        ) : (
+          <p>Not enough games to project.</p>
+        )}
+      </div>
+      <div>
+        <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-500">{player.opp} defense</h3>
+        {m ? (
+          <div className="space-y-1.5">
+            <p>
+              Allows <span className="font-semibold text-white">{m.allowed.toFixed(1)}</span> {stat.label} per game, league
+              average {m.league.toFixed(1)} ({signedPct(m.rawFactor)}): {ordinal(m.rank)} of {m.teams}, where 1st allows the
+              least. Over {m.games} games, so the projection uses {signedPct(m.factor)}
+              {m.games < 20 && ", scaled back toward average for the small sample"}.
+            </p>
+            {a.positionMatchup && (
+              <p className="text-slate-400">
+                Vs {POSITION_NAMES[a.positionMatchup.group]}: {a.positionMatchup.allowed.toFixed(1)} per game vs league{" "}
+                {a.positionMatchup.league.toFixed(1)} ({signedPct(a.positionMatchup.rawFactor)},{" "}
+                {ordinal(a.positionMatchup.rank)}). Shown for context; by-position splits were too noisy to improve the
+                probability in testing.
+              </p>
+            )}
+          </div>
+        ) : (
+          <p>No defense data for {player.opp} yet.</p>
+        )}
+      </div>
+      <div>
+        <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-500">
+          {player.name.split(" ").slice(-1)[0]} vs {player.opp}
+        </h3>
+        {a.h2hGames.length ? (
+          <ul className="space-y-0.5">
+            {a.h2hGames.map((g) => (
+              <li key={g.date} className="flex justify-between gap-3 tabular-nums">
+                <span className="text-slate-500">
+                  {g.date}
+                  {g.prevSeason && " (last season)"}
+                </span>
+                <span className={g.value > a.line ? "font-semibold text-emerald-300" : g.value < a.line ? "text-rose-300" : "text-slate-300"}>
+                  {g.value} {g.value > a.line ? "over" : g.value < a.line ? "under" : "push"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-slate-500">No games against {player.opp} since last season.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function sortValue(row: Row, key: SortKey): number {
-  if (key === "clear") return row.analysis.clear ?? -1;
-  if (key === "line") return row.analysis.line;
-  if (key === "avg10") return row.analysis.avg10 ?? -1;
-  return row.analysis.windows[key].rate ?? -1;
+  const a = row.analysis;
+  if (key === "prob") return a.prob ?? -1;
+  if (key === "clear") return a.clear ?? -1;
+  if (key === "line") return a.line;
+  if (key === "proj") return a.projection?.adjusted ?? -1;
+  if (key === "matchup") return a.matchup?.factor ?? 0;
+  return a.windows[key].rate ?? -1;
 }
 
 const Props: React.FC = () => {
@@ -112,9 +220,10 @@ const Props: React.FC = () => {
   const view = (params.get("stat") ?? "best") as StatKey | "best";
   const gameId = params.get("game") ?? "";
   const query = (params.get("q") ?? "").toLowerCase();
-  const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: "clear", asc: false });
+  const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: "prob", asc: false });
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [includeNoLine, setIncludeNoLine] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const update = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -141,15 +250,23 @@ const Props: React.FC = () => {
     const book = player.lines[stat];
     const override = overrides[`${player.id}:${stat}`];
     const line = override ?? book?.line ?? defaultLine(logs, stat);
-    return { player, stat, book, analysis: analyze(logs, stat, line, player.opp), edited: override !== undefined };
+    const matchup = data ? matchupFor(data.defense, player.opp, "ALL", stat) : null;
+    const group = positionGroup(player.pos);
+    const posMatchup = data && group !== "ALL" ? matchupFor(data.defense, player.opp, group, stat) : null;
+    return {
+      player,
+      stat,
+      book,
+      analysis: analyze(logs, stat, line, player.opp, matchup, posMatchup),
+      edited: override !== undefined,
+    };
   };
 
   const setOverride = (row: Row, value: number | null) =>
     setOverrides((prev) => {
       const next = { ...prev };
-      const key = `${row.player.id}:${row.stat}`;
-      if (value === null) delete next[key];
-      else next[key] = value;
+      if (value === null) delete next[rowKey(row)];
+      else next[rowKey(row)] = value;
       return next;
     });
 
@@ -165,13 +282,13 @@ const Props: React.FC = () => {
 
   const best = useMemo(() => {
     if (!data) return { overs: [] as Row[], unders: [] as Row[] };
-    const rows = players.flatMap((p) =>
-      (Object.keys(p.lines) as StatKey[]).map((stat) => makeRow(p, stat)),
-    ).filter((r) => r.analysis.clear !== null && r.analysis.seasonGames >= 3);
-    const byClear = [...rows].sort((a, b) => (b.analysis.clear ?? 0) - (a.analysis.clear ?? 0));
+    const rows = players
+      .flatMap((p) => (Object.keys(p.lines) as StatKey[]).map((stat) => makeRow(p, stat)))
+      .filter((r) => r.analysis.prob !== null && r.analysis.seasonGames >= 3);
+    const byProb = [...rows].sort((a, b) => (b.analysis.prob ?? 0) - (a.analysis.prob ?? 0));
     return {
-      overs: byClear.filter((r) => (r.analysis.clear ?? 0) >= 0.5).slice(0, 20),
-      unders: byClear.filter((r) => (r.analysis.clear ?? 1) < 0.5).reverse().slice(0, 20),
+      overs: byProb.filter((r) => (r.analysis.prob ?? 0) >= 0.5).slice(0, 20),
+      unders: byProb.filter((r) => (r.analysis.prob ?? 1) < 0.5).reverse().slice(0, 20),
     };
   }, [data, players, overrides, logsById]);
 
@@ -179,10 +296,11 @@ const Props: React.FC = () => {
   if (error) return <ErrorState error={error} onRetry={retry} />;
   if (!data) return null;
 
-  const sortHeader = (key: SortKey, label: string, className = "") => (
+  const sortHeader = (key: SortKey, label: string, className = "", title?: string) => (
     <th scope="col" className={`px-1 py-2 text-center ${className}`}>
       <button
         type="button"
+        title={title}
         onClick={() => setSort((s) => ({ key, asc: s.key === key ? !s.asc : false }))}
         className={`whitespace-nowrap uppercase tracking-wider hover:text-white ${sort.key === key ? "text-emerald-300" : ""}`}
       >
@@ -192,15 +310,31 @@ const Props: React.FC = () => {
     </th>
   );
 
-  const playerCell = (p: PropsPlayer, extra?: string) => (
-    <td className="px-2 py-1">
-      <div className="font-semibold text-white">{p.name}</div>
-      <div className="text-xs text-slate-500">
-        {p.team} {p.home ? "vs" : "@"} {p.opp}
-        {extra && <span className="ml-2 font-semibold text-slate-300">{extra}</span>}
-      </div>
-    </td>
-  );
+  const playerCell = (row: Row, extra?: string) => {
+    const p = row.player;
+    const open = expanded === rowKey(row);
+    return (
+      <td className="min-w-[12rem] px-2 py-1">
+        <button
+          type="button"
+          onClick={() => setExpanded(open ? null : rowKey(row))}
+          aria-expanded={open}
+          className="text-left"
+        >
+          <div className="whitespace-nowrap font-semibold text-white hover:text-emerald-300">
+            <span className="mr-1 inline-block w-3 text-slate-500">{open ? "▾" : "▸"}</span>
+            {p.name}
+          </div>
+          <div className="pl-4 text-xs text-slate-500">
+            {p.pos && `${p.pos} · `}{p.team} {p.home ? "vs" : "@"} {p.opp}
+            {extra && <span className="ml-2 font-semibold text-slate-300">{extra}</span>}
+          </div>
+        </button>
+      </td>
+    );
+  };
+
+  const statColumns = 10;
 
   return (
     <div className="space-y-6">
@@ -209,7 +343,7 @@ const Props: React.FC = () => {
           <h1 className="text-3xl font-black tracking-tight text-white">Props heat map</h1>
           <p className="text-sm text-slate-400">
             {new Date(`${data.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} ·{" "}
-            {data.games.length} games · how often each player cleared tonight&apos;s line
+            {data.games.length} games · hit rates and matchup-adjusted chances to clear tonight&apos;s line
           </p>
         </div>
         <LinesStatus board={data} />
@@ -253,8 +387,8 @@ const Props: React.FC = () => {
 
           {view === "best" ? (
             <div className="grid gap-6 xl:grid-cols-2">
-              <BestTable title="Most likely to clear" tone="emerald" rows={best.overs} playerCell={playerCell} />
-              <BestTable title="Most likely to stay under" tone="rose" rows={best.unders} playerCell={playerCell} />
+              <BestTable title="Most likely to clear" tone="emerald" rows={best.overs} playerCell={playerCell} expanded={expanded} />
+              <BestTable title="Most likely to stay under" tone="rose" rows={best.unders} playerCell={playerCell} expanded={expanded} />
               {best.overs.length + best.unders.length === 0 && (
                 <p className="text-sm text-slate-400 xl:col-span-2">
                   No sportsbook lines are loaded for these games yet. Pick a stat tab to rate players against their season averages, or set your own lines.
@@ -269,7 +403,7 @@ const Props: React.FC = () => {
                   {statHasLines(view)
                     ? "Lines are the most common number across sportsbooks."
                     : "No sportsbook lines for this stat, so each line starts at the player's season average."}{" "}
-                  Edit any line to recalculate.
+                  Edit any line to recalculate; click a player for the matchup breakdown.
                 </p>
                 {statHasLines(view) && (
                   <label className="flex items-center gap-2">
@@ -284,26 +418,37 @@ const Props: React.FC = () => {
                     <tr>
                       <th scope="col" className="px-2 py-2 text-left uppercase tracking-wider">Player</th>
                       {sortHeader("line", "Line")}
+                      {sortHeader("matchup", "Matchup", "", "How much the opponent allows this stat to the player's position vs league average")}
                       {WINDOWS.map((w) => sortHeader(w, w, w === "L20" || w === "H2H" ? "hidden md:table-cell" : ""))}
-                      <th scope="col" className="hidden px-2 py-2 text-left uppercase tracking-wider lg:table-cell">Last 10</th>
-                      {sortHeader("avg10", "L10 avg", "hidden sm:table-cell")}
-                      {sortHeader("clear", "Clear")}
+                      <th scope="col" className="hidden px-2 py-2 text-left uppercase tracking-wider xl:table-cell">Last 10</th>
+                      {sortHeader("proj", "Proj", "hidden sm:table-cell", "Matchup-adjusted projection")}
+                      {sortHeader("clear", "Hit %", "hidden sm:table-cell", "Blended hit rate vs this line")}
+                      {sortHeader("prob", "Prob", "", "Chance to go over vs tonight's opponent")}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/70">
                     {statRows.map((row) => (
-                      <tr key={row.player.id} className="hover:bg-slate-900/50">
-                        {playerCell(row.player)}
-                        <td className="px-2 py-1"><LineInput row={row} onChange={(v) => setOverride(row, v)} /></td>
-                        {WINDOWS.map((w) => (
-                          <HeatCell key={w} hr={row.analysis.windows[w]} className={w === "L20" || w === "H2H" ? "hidden md:table-cell" : ""} />
-                        ))}
-                        <td className="hidden px-2 py-1 lg:table-cell"><Last10 games={row.analysis.last10} line={row.analysis.line} /></td>
-                        <td className="hidden px-2 py-1 text-center tabular-nums text-slate-300 sm:table-cell">
-                          {row.analysis.avg10 === null ? "—" : row.analysis.avg10.toFixed(1)}
-                        </td>
-                        <ClearCell clear={row.analysis.clear} />
-                      </tr>
+                      <Fragment key={row.player.id}>
+                        <tr className="hover:bg-slate-900/50">
+                          {playerCell(row)}
+                          <td className="px-2 py-1"><LineInput row={row} onChange={(v) => setOverride(row, v)} /></td>
+                          <td className="px-1 py-1 text-center"><MatchupBadge m={row.analysis.matchup} opp={row.player.opp} /></td>
+                          {WINDOWS.map((w) => (
+                            <HeatCell key={w} hr={row.analysis.windows[w]} className={w === "L20" || w === "H2H" ? "hidden md:table-cell" : ""} />
+                          ))}
+                          <td className="hidden px-2 py-1 xl:table-cell"><Last10 games={row.analysis.last10} line={row.analysis.line} /></td>
+                          <td className="hidden px-2 py-1 text-center tabular-nums text-slate-200 sm:table-cell">
+                            {row.analysis.projection ? row.analysis.projection.adjusted.toFixed(1) : "—"}
+                          </td>
+                          <td className="hidden px-2 py-1 text-center font-semibold tabular-nums text-slate-300 sm:table-cell">{pct(row.analysis.clear)}</td>
+                          <ProbCell prob={row.analysis.prob} />
+                        </tr>
+                        {expanded === rowKey(row) && (
+                          <tr className="bg-slate-900/60">
+                            <td colSpan={statColumns + 2}><MatchupDetail row={row} /></td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -366,32 +511,44 @@ const BestTable: React.FC<{
   title: string;
   tone: "emerald" | "rose";
   rows: Row[];
-  playerCell: (p: PropsPlayer, extra?: string) => React.ReactNode;
-}> = ({ title, tone, rows, playerCell }) => {
+  expanded: string | null;
+  playerCell: (row: Row, extra?: string) => React.ReactNode;
+}> = ({ title, tone, rows, expanded, playerCell }) => {
   if (!rows.length) return null;
   return (
     <section className="space-y-2">
       <h2 className={`text-sm font-bold uppercase tracking-widest ${tone === "emerald" ? "text-emerald-300" : "text-rose-300"}`}>{title}</h2>
       <div className="overflow-x-auto rounded-2xl border border-slate-800">
         <table className="w-full text-sm">
-          <thead className="bg-slate-900/80 text-xs uppercase tracking-wider text-slate-400">
+          <thead className="whitespace-nowrap bg-slate-900/80 text-xs uppercase tracking-wider text-slate-400">
             <tr>
               <th scope="col" className="px-2 py-2 text-left">Player · prop</th>
-              {WINDOWS.map((w) => (
-                <th key={w} scope="col" className={`px-1 py-2 text-center ${w === "L20" || w === "H2H" ? "hidden sm:table-cell" : ""}`}>{w}</th>
+              <th scope="col" className="px-1 py-2 text-center">Matchup</th>
+              {(["L5", "L10", "H2H"] as WindowKey[]).map((w) => (
+                <th key={w} scope="col" className={`px-1 py-2 text-center ${w === "H2H" ? "hidden sm:table-cell" : ""}`}>{w}</th>
               ))}
-              <th scope="col" className="px-2 py-2 text-right">Clear</th>
+              <th scope="col" className="hidden px-1 py-2 text-center sm:table-cell">Hit %</th>
+              <th scope="col" className="px-2 py-2 text-right">Prob</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/70">
             {rows.map((row) => (
-              <tr key={`${row.player.id}:${row.stat}`} className="hover:bg-slate-900/50">
-                {playerCell(row.player, `${STAT_BY_KEY[row.stat].label} ${row.analysis.line}`)}
-                {WINDOWS.map((w) => (
-                  <HeatCell key={w} hr={row.analysis.windows[w]} className={w === "L20" || w === "H2H" ? "hidden sm:table-cell" : ""} />
-                ))}
-                <ClearCell clear={row.analysis.clear} />
-              </tr>
+              <Fragment key={rowKey(row)}>
+                <tr className="hover:bg-slate-900/50">
+                  {playerCell(row, `${STAT_BY_KEY[row.stat].label} ${row.analysis.line}`)}
+                  <td className="px-1 py-1 text-center"><MatchupBadge m={row.analysis.matchup} opp={row.player.opp} /></td>
+                  {(["L5", "L10", "H2H"] as WindowKey[]).map((w) => (
+                    <HeatCell key={w} hr={row.analysis.windows[w]} className={w === "H2H" ? "hidden sm:table-cell" : ""} />
+                  ))}
+                  <td className="hidden px-1 py-1 text-center font-semibold tabular-nums text-slate-300 sm:table-cell">{pct(row.analysis.clear)}</td>
+                  <ProbCell prob={row.analysis.prob} />
+                </tr>
+                {expanded === rowKey(row) && (
+                  <tr className="bg-slate-900/60">
+                    <td colSpan={7}><MatchupDetail row={row} compact /></td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -402,18 +559,35 @@ const BestTable: React.FC<{
 
 const Methodology: React.FC = () => (
   <details className="rounded-2xl border border-slate-800 bg-slate-900/30 p-4 text-sm text-slate-400">
-    <summary className="cursor-pointer font-semibold text-slate-200">How &ldquo;Clear %&rdquo; works</summary>
+    <summary className="cursor-pointer font-semibold text-slate-200">How Matchup, Hit % and Prob work</summary>
     <div className="mt-3 space-y-2">
       <p>
-        Each cell is how often the player went <em>over</em> the line: L5/L10/L20 are the last 5, 10 and 20 games (reaching into
-        last season early on), SZN is this season, and H2H is every game against tonight&apos;s opponent since last season.
-        A result exactly on a whole-number line is a push and isn&apos;t counted.
+        <span className="font-semibold text-slate-200">Hit cells</span> show how often the player went <em>over</em> the line:
+        L5/L10/L20 are the last 5, 10 and 20 games (reaching into last season early on), SZN is this season, and H2H is every
+        game against tonight&apos;s opponent since last season. A result exactly on a whole-number line is a push and isn&apos;t
+        counted. <span className="font-semibold text-slate-200">Hit %</span> blends them (L10 30%, L5 25%, L20 20%, season 15%,
+        head-to-head 10%).
       </p>
       <p>
-        Clear % blends them: L10 30%, L5 25%, L20 20%, season 15%, head-to-head 10% (less with fewer than 3 meetings), then
-        pulls toward 50% when there are few recent games. 62% or higher is marked Over, 38% or lower Under.
+        <span className="font-semibold text-slate-200">Matchup</span> compares how much of this stat tonight&apos;s opponent
+        allows per game with the league average this season. Green means a soft matchup for the over, red a tough one. The
+        rank runs from 1st (allows the least) to 30th, and the adjustment is scaled back toward average while a team has
+        played few games. Click a player to also see the opponent&apos;s numbers against their position.
       </p>
-      <p>Hit rates describe the past, not a guarantee. Minutes, injuries and matchups change. Not betting advice.</p>
+      <p>
+        <span className="font-semibold text-slate-200">Prob</span> is the chance of going over vs this opponent: recent form
+        (L10 50%, season 30%, L5 20%) times the matchup adjustment gives a projection, and the player&apos;s own game-to-game
+        spread turns that into a probability (low-count stats under 6 per game use a Poisson curve instead). Raw chances
+        above 65% came in lower in testing, so the top end is tempered. 62% or higher is marked Over, 38% or lower Under.
+        Hit % and Prob can disagree: Hit % only counts past results against this exact line, while Prob also weighs how
+        far the projection sits from the line and the matchup.
+      </p>
+      <p>
+        Tested on every 2025-26 game from December on (about 61,000 player-props, using only data available before each
+        game), the matchup adjustment improved accuracy for points, rebounds, assists, threes and PRA, and the
+        probabilities were well calibrated: picks rated 60–70% went over 65% of the time.
+      </p>
+      <p>These describe tendencies, not guarantees. Minutes, injuries and rotations change. Not betting advice.</p>
     </div>
   </details>
 );

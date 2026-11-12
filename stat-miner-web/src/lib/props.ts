@@ -33,6 +33,7 @@ type LogRow = [string, string, number, number, ...number[]];
 export type PropsPlayer = {
   id: string;
   name: string;
+  pos: string;
   team: string;
   opp: string;
   home: boolean;
@@ -58,9 +59,22 @@ export type PropsBoard = {
   games: PropsGame[];
   players: PropsPlayer[];
   lines: { fetched_at: string; credits_remaining: number | null; markets: StatKey[] } | null;
+  defense: DefenseProfile;
   unmatched_props: string[];
   logs_through: string | null;
 };
+
+type DefenseGroup = "ALL" | "G" | "F" | "C";
+
+export type DefenseProfile = {
+  season: string;
+  fields: string[];
+  games: Record<string, number>;
+  allowed: Record<string, Record<DefenseGroup, number[]>>;
+  league: Partial<Record<DefenseGroup, number[]>>;
+};
+
+export const POSITION_NAMES: Record<DefenseGroup, string> = { ALL: "all players", G: "guards", F: "forwards", C: "centers" };
 
 export type GameLog = { date: string; opp: string; home: boolean; prevSeason: boolean; stats: Record<LogField, number> };
 
@@ -99,13 +113,119 @@ export type WindowKey = (typeof WINDOWS)[number];
 const WEIGHTS: Record<WindowKey, number> = { L5: 0.25, L10: 0.3, L20: 0.2, SZN: 0.15, H2H: 0.1 };
 const SHRINK_GAMES = 3;
 
+const DEFENSE_SHRINK_GAMES = 8;
+
+export type Matchup = {
+  group: DefenseGroup;
+  allowed: number;
+  league: number;
+  rawFactor: number;
+  factor: number;
+  rank: number;
+  teams: number;
+  games: number;
+};
+
+export function positionGroup(pos: string): DefenseGroup {
+  return pos === "G" || pos === "F" || pos === "C" ? pos : "ALL";
+}
+
+/**
+ * How much the opponent allows of this stat (to everyone, or to one position)
+ * relative to the league. The factor is pulled toward 1.0 while the opponent
+ * has few games. Rank 1 allows the least (toughest matchup).
+ *
+ * The probability uses the whole-team version: backtested on 2025-26 it
+ * improved every stat, while the by-position version was mostly noise.
+ */
+export function matchupFor(defense: DefenseProfile, opp: string, group: DefenseGroup, stat: StatKey): Matchup | null {
+  const idx = STAT_BY_KEY[stat].parts.map((p) => defense.fields.indexOf(p));
+  const total = (vals: number[] | undefined) => (vals ? idx.reduce((s, i) => s + vals[i], 0) : null);
+
+  const allowed = total(defense.allowed[opp]?.[group]);
+  const league = total(defense.league[group]);
+  if (allowed === null || !league) return null;
+
+  const games = defense.games[opp] ?? 0;
+  const rawFactor = allowed / league;
+  const factor = 1 + ((rawFactor - 1) * games) / (games + DEFENSE_SHRINK_GAMES);
+  const all = Object.values(defense.allowed).map((t) => total(t[group]) ?? 0);
+  const rank = all.filter((v) => v < allowed).length + 1;
+  return { group, allowed, league, rawFactor, factor, rank, teams: all.length, games };
+}
+
+export type Projection = { l5: number | null; l10: number | null; season: number | null; base: number; adjusted: number; sd: number };
+
+const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
+
+export function project(logs: GameLog[], stat: StatKey, factor: number): Projection | null {
+  const values = logs.map((l) => statValue(l, stat));
+  if (!values.length) return null;
+  const seasonVals = logs.filter((l) => !l.prevSeason).map((l) => statValue(l, stat));
+  const l5 = mean(values.slice(0, 5));
+  const l10 = mean(values.slice(0, 10));
+  const season = mean(seasonVals);
+  const parts: [number | null, number][] = [[l5, 0.2], [l10, 0.5], [season ?? mean(values.slice(0, 20)), 0.3]];
+  const used = parts.filter((p): p is [number, number] => p[0] !== null);
+  const base = used.reduce((s, [v, w]) => s + v * w, 0) / used.reduce((s, [, w]) => s + w, 0);
+
+  const recent = values.slice(0, 20);
+  const avg = mean(recent) ?? base;
+  const sd = recent.length >= 5 ? Math.sqrt(recent.reduce((s, v) => s + (v - avg) ** 2, 0) / (recent.length - 1)) : Math.sqrt(base);
+  return { l5, l10, season, base, adjusted: base * factor, sd };
+}
+
+function normalCdf(z: number): number {
+  const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(z * z) / 2);
+  return z >= 0 ? (1 + y) / 2 : (1 - y) / 2;
+}
+
+/** Raw chances above 65% came in lower in the backtest, so the top end is compressed. */
+function calibrate(p: number): number {
+  return p > 0.65 ? 0.65 + (p - 0.65) * 0.4 : p;
+}
+
+const LOW_COUNT_PROJECTION = 6;
+
+/** The game-to-game spread probOver actually uses for this projection. */
+export function spreadUsed(projection: number, sd: number): number {
+  return projection < LOW_COUNT_PROJECTION ? Math.sqrt(Math.max(projection, 0)) : Math.max(sd, Math.sqrt(projection));
+}
+
+/**
+ * Chance of going over the line. Low-count stats (projection under 6) use a
+ * Poisson model; everything else a normal curve using the player's own
+ * game-to-game spread, never tighter than a Poisson's. A negative binomial
+ * using the player's spread backtested worse for low counts.
+ * Mirrored in stat-miner-app/scripts/backtest_props_model.py.
+ */
+export function probOver(projection: number, sd: number, line: number): number {
+  const need = Math.floor(line) + 1;
+  if (projection <= 0) return 0;
+  if (projection < LOW_COUNT_PROJECTION) {
+    let term = Math.exp(-projection);
+    let below = 0;
+    for (let k = 0; k < need; k++) {
+      below += term;
+      term *= projection / (k + 1);
+    }
+    return calibrate(Math.min(1, Math.max(0, 1 - below)));
+  }
+  return calibrate(1 - normalCdf((need - 0.5 - projection) / spreadUsed(projection, sd)));
+}
+
 export type PropAnalysis = {
   line: number;
   windows: Record<WindowKey, HitRate>;
   last10: { value: number; opp: string; date: string }[];
-  avg10: number | null;
+  h2hGames: { value: number; date: string; prevSeason: boolean }[];
   clear: number | null;
   seasonGames: number;
+  matchup: Matchup | null;
+  positionMatchup: Matchup | null;
+  projection: Projection | null;
+  prob: number | null;
 };
 
 export function defaultLine(logs: GameLog[], stat: StatKey): number {
@@ -121,7 +241,14 @@ export function defaultLine(logs: GameLog[], stat: StatKey): number {
  * weighted down when there are fewer than 3 meetings, then shrinks toward 50%
  * when the last-10 sample is small.
  */
-export function analyze(logs: GameLog[], stat: StatKey, line: number, opp: string): PropAnalysis {
+export function analyze(
+  logs: GameLog[],
+  stat: StatKey,
+  line: number,
+  opp: string,
+  matchup: Matchup | null,
+  positionMatchup: Matchup | null = null,
+): PropAnalysis {
   const values = logs.map((l) => statValue(l, stat));
   const season = logs.filter((l) => !l.prevSeason).map((l) => statValue(l, stat));
   const h2h = logs.filter((l) => l.opp === opp).map((l) => statValue(l, stat));
@@ -145,14 +272,22 @@ export function analyze(logs: GameLog[], stat: StatKey, line: number, opp: strin
   const sample = windows.L10.n;
   const clear = total ? (weighted / total * sample + 0.5 * SHRINK_GAMES) / (sample + SHRINK_GAMES) : null;
   const last10 = logs.slice(0, 10).map((l) => ({ value: statValue(l, stat), opp: l.opp, date: l.date }));
+  const h2hGames = logs
+    .filter((l) => l.opp === opp)
+    .map((l) => ({ value: statValue(l, stat), date: l.date, prevSeason: l.prevSeason }));
+  const projection = project(logs, stat, matchup?.factor ?? 1);
 
   return {
     line,
     windows,
     last10,
-    avg10: last10.length ? last10.reduce((s, g) => s + g.value, 0) / last10.length : null,
+    h2hGames,
     clear,
     seasonGames: season.length,
+    matchup,
+    positionMatchup,
+    projection,
+    prob: projection ? probOver(projection.adjusted, projection.sd, line) : null,
   };
 }
 
@@ -163,9 +298,17 @@ export function heatStyle(rate: number | null): CSSProperties {
   return { backgroundColor: `hsl(${hue} 70% 38% / ${strength})`, color: "white" };
 }
 
-export function lean(clear: number | null): "Over" | "Under" | null {
-  if (clear === null) return null;
-  if (clear >= 0.62) return "Over";
-  if (clear <= 0.38) return "Under";
+export function lean(chance: number | null): "Over" | "Under" | null {
+  if (chance === null) return null;
+  if (chance >= 0.62) return "Over";
+  if (chance <= 0.38) return "Under";
   return null;
+}
+
+/** Matchup badge colors from the over bettor's view: soft defense is green. */
+export function matchupTone(m: Matchup | null): string {
+  if (!m) return "bg-slate-800 text-slate-400";
+  if (m.factor >= 1.03) return "bg-emerald-500/15 text-emerald-300";
+  if (m.factor <= 0.97) return "bg-rose-500/15 text-rose-300";
+  return "bg-slate-700/60 text-slate-300";
 }

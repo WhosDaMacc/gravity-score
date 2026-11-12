@@ -23,6 +23,9 @@ services:
         sync: false
       - key: ODDS_API_KEY
         sync: false
+      # Odds API credits per day for props lines (free plan: 500/month)
+      - key: PROPS_DAILY_CREDIT_BUDGET
+        value: "16"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
