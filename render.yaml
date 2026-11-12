@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: gravity-score-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd stat-miner-app && uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.3
+      # Your Vercel URL, e.g. https://gravity-score.vercel.app (comma-separate several)
+      - key: CORS_ORIGINS
+        sync: false
+      # Optional: allow Vercel preview deploys, e.g. https://gravity-score-.*\.vercel\.app
+      - key: CORS_ORIGIN_REGEX
+        sync: false
+      # Enables POST /odds, /rankings, /tracker/bets when sent as the X-Admin-Token header
+      - key: ADMIN_TOKEN
+        generateValue: true
+      # Optional: HTTP proxy for NBA.com, which often blocks cloud server IPs
+      - key: NBA_API_PROXY
+        sync: false
+      - key: ODDS_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false

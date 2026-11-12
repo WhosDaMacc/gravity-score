@@ -1,0 +1,1057 @@
+{
+ "date": "2026-11-11",
+ "fetched_at": "2026-11-12T00:06:43+00:00",
+ "budget": 16,
+ "credits_spent": 10,
+ "credits_remaining": 477,
+ "events": [
+  {
+   "event_id": "37f4c00ff7ec01d5aa7c33dd1ac84bbc",
+   "home_team": "Toronto Raptors",
+   "away_team": "Boston Celtics",
+   "commence_time": "2026-11-12T00:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Immanuel Quickley": {
+      "line": 17.5,
+      "books": 8,
+      "low": 17.5,
+      "high": 17.5
+     },
+     "Baylor Scheierman": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Jamal Shead": {
+      "line": 7.5,
+      "books": 8,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Neemias Queta": {
+      "line": 9.5,
+      "books": 8,
+      "low": 9.5,
+      "high": 10.5
+     },
+     "Ja'Kobe Walter": {
+      "line": 11.5,
+      "books": 7,
+      "low": 11.5,
+      "high": 12.5
+     },
+     "R.J. Barrett": {
+      "line": 20.5,
+      "books": 7,
+      "low": 20.5,
+      "high": 21.5
+     },
+     "Collin Murray-Boyles": {
+      "line": 11.5,
+      "books": 8,
+      "low": 11.5,
+      "high": 11.5
+     },
+     "Jamison Battle": {
+      "line": 7.5,
+      "books": 8,
+      "low": 7.5,
+      "high": 8.5
+     },
+     "Jakob Poeltl": {
+      "line": 9.5,
+      "books": 7,
+      "low": 9.5,
+      "high": 9.5
+     },
+     "Derrick White": {
+      "line": 14.5,
+      "books": 8,
+      "low": 14.5,
+      "high": 14.5
+     },
+     "Luka Garza": {
+      "line": 7.5,
+      "books": 4,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Sam Hauser": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Jayson Tatum": {
+      "line": 26.5,
+      "books": 7,
+      "low": 26.5,
+      "high": 27.5
+     },
+     "Payton Pritchard": {
+      "line": 15.5,
+      "books": 8,
+      "low": 15.5,
+      "high": 16.5
+     },
+     "Jordan Walsh": {
+      "line": 3.5,
+      "books": 2,
+      "low": 3.5,
+      "high": 4.5
+     },
+     "Mitchell Robinson": {
+      "line": 4.5,
+      "books": 4,
+      "low": 4.5,
+      "high": 5.5
+     },
+     "Allen Graves": {
+      "line": 6.5,
+      "books": 1,
+      "low": 6.5,
+      "high": 6.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "095441822e3b9b1b84bff9e482b9057a",
+   "home_team": "New York Knicks",
+   "away_team": "Cleveland Cavaliers",
+   "commence_time": "2026-11-12T00:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Jalen Brunson": {
+      "line": 25.5,
+      "books": 8,
+      "low": 25.5,
+      "high": 26.5
+     },
+     "Evan Mobley": {
+      "line": 14.5,
+      "books": 7,
+      "low": 14.5,
+      "high": 15.5
+     },
+     "Mario Hezonja": {
+      "line": 7.5,
+      "books": 1,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Landry Shamet": {
+      "line": 8.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 8.5
+     },
+     "Josh Hart": {
+      "line": 9.5,
+      "books": 8,
+      "low": 9.5,
+      "high": 9.5
+     },
+     "Meleek Thomas": {
+      "line": 8.5,
+      "books": 8,
+      "low": 8.5,
+      "high": 9.5
+     },
+     "Jarrett Allen": {
+      "line": 11.5,
+      "books": 7,
+      "low": 11.5,
+      "high": 11.5
+     },
+     "OG Anunoby": {
+      "line": 16.5,
+      "books": 7,
+      "low": 16.5,
+      "high": 17.5
+     },
+     "Andre Drummond": {
+      "line": 4.5,
+      "books": 6,
+      "low": 4.5,
+      "high": 4.5
+     },
+     "Peyton Watson": {
+      "line": 11.5,
+      "books": 7,
+      "low": 11.5,
+      "high": 11.5
+     },
+     "Donovan Mitchell": {
+      "line": 23.5,
+      "books": 8,
+      "low": 22.5,
+      "high": 24.5
+     },
+     "James Harden": {
+      "line": 15.5,
+      "books": 7,
+      "low": 15.5,
+      "high": 15.5
+     },
+     "Miles McBride": {
+      "line": 5.5,
+      "books": 7,
+      "low": 5.5,
+      "high": 5.5
+     },
+     "Jaylon Tyson": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 8.0
+     },
+     "Karl-Anthony Towns": {
+      "line": 20.5,
+      "books": 7,
+      "low": 19.5,
+      "high": 20.5
+     },
+     "Mikal Bridges": {
+      "line": 9.5,
+      "books": 6,
+      "low": 8.5,
+      "high": 9.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "e9545a3084389f5f3429e19fea891124",
+   "home_team": "Indiana Pacers",
+   "away_team": "Washington Wizards",
+   "commence_time": "2026-11-12T00:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Anthony Davis": {
+      "line": 22.5,
+      "books": 7,
+      "low": 22.5,
+      "high": 23.5
+     },
+     "Pascal Siakam": {
+      "line": 21.5,
+      "books": 7,
+      "low": 21.5,
+      "high": 22.5
+     },
+     "Trae Young": {
+      "line": 18.5,
+      "books": 8,
+      "low": 17.5,
+      "high": 18.5
+     },
+     "AJ Dybantsa": {
+      "line": 17.5,
+      "books": 7,
+      "low": 17.5,
+      "high": 17.5
+     },
+     "Andrew Nembhard": {
+      "line": 16.5,
+      "books": 7,
+      "low": 15.5,
+      "high": 16.5
+     },
+     "Kyshawn George": {
+      "line": 14.5,
+      "books": 8,
+      "low": 14.5,
+      "high": 15.5
+     },
+     "Aaron Nesmith": {
+      "line": 13.5,
+      "books": 8,
+      "low": 12.5,
+      "high": 13.5
+     },
+     "Ivica Zubac": {
+      "line": 12.5,
+      "books": 8,
+      "low": 12.5,
+      "high": 12.5
+     },
+     "Obi Toppin": {
+      "line": 11.5,
+      "books": 8,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "Alex Sarr": {
+      "line": 10.5,
+      "books": 7,
+      "low": 9.5,
+      "high": 10.5
+     },
+     "Kelly Oubre Jr.": {
+      "line": 9.5,
+      "books": 8,
+      "low": 9.5,
+      "high": 9.5
+     },
+     "Tre Johnson": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Bilal Coulibaly": {
+      "line": 6.5,
+      "books": 8,
+      "low": 6.5,
+      "high": 7.5
+     },
+     "Deandre Ayton": {
+      "line": 4.5,
+      "books": 3,
+      "low": 4.5,
+      "high": 4.5
+     },
+     "T.J. McConnell": {
+      "line": 6.5,
+      "books": 7,
+      "low": 6.5,
+      "high": 6.5
+     },
+     "Quenton Jackson": {
+      "line": 8.5,
+      "books": 2,
+      "low": 8.5,
+      "high": 8.5
+     },
+     "Jarace Walker": {
+      "line": 7.5,
+      "books": 2,
+      "low": 7.5,
+      "high": 7.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "e6a37eea1dddcbd0384c81237e81f47f",
+   "home_team": "New Orleans Pelicans",
+   "away_team": "Brooklyn Nets",
+   "commence_time": "2026-11-12T01:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Michael Porter Jr": {
+      "line": 24.5,
+      "books": 8,
+      "low": 22.5,
+      "high": 24.5
+     },
+     "Julius Randle": {
+      "line": 22.5,
+      "books": 7,
+      "low": 21.5,
+      "high": 22.5
+     },
+     "Zion Williamson": {
+      "line": 21.5,
+      "books": 8,
+      "low": 21.5,
+      "high": 22.5
+     },
+     "Jeremiah Fears": {
+      "line": 16.5,
+      "books": 8,
+      "low": 16.5,
+      "high": 17.5
+     },
+     "Dejounte Murray": {
+      "line": 15.5,
+      "books": 7,
+      "low": 15.5,
+      "high": 16.5
+     },
+     "Saddiq Bey": {
+      "line": 14.5,
+      "books": 7,
+      "low": 14.5,
+      "high": 15.5
+     },
+     "Day'Ron Sharpe": {
+      "line": 10.5,
+      "books": 7,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "Derik Queen": {
+      "line": 10.5,
+      "books": 8,
+      "low": 9.5,
+      "high": 10.5
+     },
+     "Danny Wolf": {
+      "line": 10.5,
+      "books": 6,
+      "low": 10.5,
+      "high": 11.0
+     },
+     "Moritz Wagner": {
+      "line": 9.5,
+      "books": 6,
+      "low": 9.5,
+      "high": 9.5
+     },
+     "Egor Demin": {
+      "line": 9.5,
+      "books": 8,
+      "low": 9.5,
+      "high": 9.5
+     },
+     "Herb Jones": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 8.5
+     },
+     "Karlo Matkovic": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Keon Ellis": {
+      "line": 5.5,
+      "books": 4,
+      "low": 5.5,
+      "high": 6.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "8e0fdbf07b1f288b00ec5b370f6c1e2d",
+   "home_team": "Chicago Bulls",
+   "away_team": "San Antonio Spurs",
+   "commence_time": "2026-11-12T01:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Victor Wembanyama": {
+      "line": 29.5,
+      "books": 7,
+      "low": 29.5,
+      "high": 30.5
+     },
+     "Caleb Wilson": {
+      "line": 18.5,
+      "books": 6,
+      "low": 17.5,
+      "high": 18.5
+     },
+     "Dylan Harper": {
+      "line": 17.5,
+      "books": 7,
+      "low": 17.5,
+      "high": 17.5
+     },
+     "Stephon Castle": {
+      "line": 16.5,
+      "books": 6,
+      "low": 15.5,
+      "high": 16.5
+     },
+     "Matas Buzelis": {
+      "line": 15.5,
+      "books": 6,
+      "low": 15.5,
+      "high": 15.5
+     },
+     "De'Aaron Fox": {
+      "line": 13.5,
+      "books": 6,
+      "low": 13.5,
+      "high": 13.5
+     },
+     "Josh Giddey": {
+      "line": 13.5,
+      "books": 7,
+      "low": 12.5,
+      "high": 13.5
+     },
+     "Jalen Smith": {
+      "line": 12.5,
+      "books": 6,
+      "low": 11.5,
+      "high": 12.5
+     },
+     "Julian Champagnie": {
+      "line": 11.5,
+      "books": 6,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "Keldon Johnson": {
+      "line": 11.5,
+      "books": 7,
+      "low": 11.5,
+      "high": 11.5
+     },
+     "Isaac Okoro": {
+      "line": 7.5,
+      "books": 6,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Luke Kornet": {
+      "line": 4.5,
+      "books": 6,
+      "low": 4.5,
+      "high": 4.5
+     },
+     "Nic Claxton": {
+      "line": 7.5,
+      "books": 5,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Harrison Barnes": {
+      "line": 6.5,
+      "books": 1,
+      "low": 6.5,
+      "high": 6.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "21792501482fecfaacd3a4a24776c9e6",
+   "home_team": "Memphis Grizzlies",
+   "away_team": "Denver Nuggets",
+   "commence_time": "2026-11-12T01:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Zach Edey": {
+      "line": 9.5,
+      "books": 7,
+      "low": 8.5,
+      "high": 9.5
+     },
+     "DeMar DeRozan": {
+      "line": 10.5,
+      "books": 7,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "Cameron Johnson": {
+      "line": 11.5,
+      "books": 7,
+      "low": 11.5,
+      "high": 11.5
+     },
+     "Cam Spencer": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.0,
+      "high": 7.5
+     },
+     "Ty Jerome": {
+      "line": 21.5,
+      "books": 8,
+      "low": 21.5,
+      "high": 21.5
+     },
+     "Jamal Murray": {
+      "line": 23.5,
+      "books": 7,
+      "low": 23.5,
+      "high": 24.5
+     },
+     "Jerami Grant": {
+      "line": 10.5,
+      "books": 8,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "Cameron Boozer": {
+      "line": 16.5,
+      "books": 8,
+      "low": 16.5,
+      "high": 17.5
+     },
+     "Aaron Gordon": {
+      "line": 12.5,
+      "books": 8,
+      "low": 12.5,
+      "high": 12.5
+     },
+     "Christian Braun": {
+      "line": 11.5,
+      "books": 7,
+      "low": 11.5,
+      "high": 11.5
+     },
+     "Cedric Coward": {
+      "line": 12.5,
+      "books": 7,
+      "low": 12.5,
+      "high": 13.5
+     },
+     "Nikola Jokic": {
+      "line": 25.5,
+      "books": 8,
+      "low": 24.5,
+      "high": 26.5
+     },
+     "Isaiah Stewart": {
+      "line": 7.5,
+      "books": 6,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Trevon Brazile": {
+      "line": 3.5,
+      "books": 5,
+      "low": 3.5,
+      "high": 4.5
+     },
+     "Jaylen Wells": {
+      "line": 10.5,
+      "books": 8,
+      "low": 10.5,
+      "high": 10.5
+     },
+     "Spencer Jones": {
+      "line": 3.5,
+      "books": 6,
+      "low": 3.5,
+      "high": 4.5
+     },
+     "Javon Small": {
+      "line": 8.5,
+      "books": 2,
+      "low": 8.5,
+      "high": 9.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "c04e54e9e028676cd8b23259bb4364ff",
+   "home_team": "Milwaukee Bucks",
+   "away_team": "Los Angeles Lakers",
+   "commence_time": "2026-11-12T01:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Collin Sexton": {
+      "line": 11.5,
+      "books": 6,
+      "low": 11.5,
+      "high": 12.5
+     },
+     "Tyler Herro": {
+      "line": 19.5,
+      "books": 8,
+      "low": 18.5,
+      "high": 19.5
+     },
+     "Brayden Burries": {
+      "line": 12.5,
+      "books": 7,
+      "low": 11.5,
+      "high": 12.5
+     },
+     "Kel'el Ware": {
+      "line": 10.5,
+      "books": 7,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "A.J. Green": {
+      "line": 5.5,
+      "books": 4,
+      "low": 5.5,
+      "high": 5.5
+     },
+     "Kyle Kuzma": {
+      "line": 11.5,
+      "books": 7,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "Austin Reaves": {
+      "line": 22.5,
+      "books": 8,
+      "low": 21.5,
+      "high": 22.5
+     },
+     "Jaime Jaquez Jr": {
+      "line": 14.5,
+      "books": 7,
+      "low": 13.5,
+      "high": 14.5
+     },
+     "Jake LaRavia": {
+      "line": 6.5,
+      "books": 7,
+      "low": 5.5,
+      "high": 6.5
+     },
+     "Matisse Thybulle": {
+      "line": 6.5,
+      "books": 6,
+      "low": 5.5,
+      "high": 6.5
+     },
+     "Ryan Rollins": {
+      "line": 10.5,
+      "books": 6,
+      "low": 10.5,
+      "high": 10.5
+     },
+     "Sandro Mamukelashvili": {
+      "line": 8.5,
+      "books": 8,
+      "low": 8.5,
+      "high": 8.5
+     },
+     "Luka Doncic": {
+      "line": 34.5,
+      "books": 8,
+      "low": 33.5,
+      "high": 35.5
+     },
+     "Ziaire Williams": {
+      "line": 8.5,
+      "books": 8,
+      "low": 8.5,
+      "high": 9.5
+     },
+     "Walker Kessler": {
+      "line": 13.5,
+      "books": 8,
+      "low": 13.5,
+      "high": 14.0
+     }
+    }
+   }
+  },
+  {
+   "event_id": "423255883d0e6c5d1a94a533b90e935b",
+   "home_team": "Utah Jazz",
+   "away_team": "Orlando Magic",
+   "commence_time": "2026-11-12T02:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Darryn Peterson": {
+      "line": 18.5,
+      "books": 7,
+      "low": 17.5,
+      "high": 19.5
+     },
+     "Keyonte George": {
+      "line": 21.5,
+      "books": 5,
+      "low": 21.5,
+      "high": 21.5
+     },
+     "Ace Bailey": {
+      "line": 15.5,
+      "books": 6,
+      "low": 15.5,
+      "high": 15.5
+     },
+     "Wendell Carter Jr": {
+      "line": 12.5,
+      "books": 8,
+      "low": 12.5,
+      "high": 13.5
+     },
+     "Tristan da Silva": {
+      "line": 12.5,
+      "books": 3,
+      "low": 12.5,
+      "high": 12.5
+     },
+     "Jaxson Hayes": {
+      "line": 8.5,
+      "books": 7,
+      "low": 8.5,
+      "high": 9.5
+     },
+     "Josh Okogie": {
+      "line": 5.5,
+      "books": 6,
+      "low": 5.5,
+      "high": 6.5
+     },
+     "Jamal Cain": {
+      "line": 8.5,
+      "books": 5,
+      "low": 8.5,
+      "high": 9.5
+     },
+     "Anthony Black": {
+      "line": 16.5,
+      "books": 6,
+      "low": 15.5,
+      "high": 16.5
+     },
+     "Josh Green": {
+      "line": 6.5,
+      "books": 6,
+      "low": 6.5,
+      "high": 6.5
+     },
+     "Desmond Bane": {
+      "line": 19.5,
+      "books": 8,
+      "low": 18.5,
+      "high": 19.5
+     },
+     "Franz Wagner": {
+      "line": 24.5,
+      "books": 7,
+      "low": 24.0,
+      "high": 24.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "f41d186dc7a7dcf01adab32579a82ca3",
+   "home_team": "Houston Rockets",
+   "away_team": "Golden State Warriors",
+   "commence_time": "2026-11-12T02:40:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Stephen Curry": {
+      "line": 25.5,
+      "books": 7,
+      "low": 25.5,
+      "high": 26.5
+     },
+     "Kevin Durant": {
+      "line": 21.5,
+      "books": 7,
+      "low": 21.5,
+      "high": 22.5
+     },
+     "Alperen Sengun": {
+      "line": 19.5,
+      "books": 8,
+      "low": 19.5,
+      "high": 19.5
+     },
+     "Yaxel Lendeborg": {
+      "line": 17.5,
+      "books": 8,
+      "low": 17.5,
+      "high": 17.5
+     },
+     "Amen Thompson": {
+      "line": 15.5,
+      "books": 8,
+      "low": 14.5,
+      "high": 15.5
+     },
+     "Brandin Podziemski": {
+      "line": 15.5,
+      "books": 8,
+      "low": 14.5,
+      "high": 15.5
+     },
+     "Jabari Smith Jr": {
+      "line": 14.5,
+      "books": 8,
+      "low": 14.5,
+      "high": 14.5
+     },
+     "Fred VanVleet": {
+      "line": 11.5,
+      "books": 8,
+      "low": 11.5,
+      "high": 11.5
+     },
+     "De'Anthony Melton": {
+      "line": 8.5,
+      "books": 7,
+      "low": 8.5,
+      "high": 9.5
+     },
+     "Tari Eason": {
+      "line": 8.5,
+      "books": 7,
+      "low": 7.5,
+      "high": 8.5
+     },
+     "Georges Niang": {
+      "line": 7.5,
+      "books": 7,
+      "low": 7.0,
+      "high": 8.5
+     },
+     "Gui Santos": {
+      "line": 7.5,
+      "books": 6,
+      "low": 6.5,
+      "high": 7.5
+     },
+     "Marcus Smart": {
+      "line": 6.5,
+      "books": 6,
+      "low": 5.5,
+      "high": 6.5
+     },
+     "Draymond Green": {
+      "line": 4.5,
+      "books": 6,
+      "low": 4.5,
+      "high": 4.5
+     },
+     "Al Horford": {
+      "line": 4.5,
+      "books": 6,
+      "low": 4.5,
+      "high": 4.5
+     },
+     "Reed Sheppard": {
+      "line": 8.5,
+      "books": 1,
+      "low": 8.5,
+      "high": 8.5
+     }
+    }
+   }
+  },
+  {
+   "event_id": "d4f288eeb0132970825be17748f2b4f0",
+   "home_team": "Portland Trail Blazers",
+   "away_team": "Oklahoma City Thunder",
+   "commence_time": "2026-11-12T03:10:00Z",
+   "markets": [
+    "pts"
+   ],
+   "props": {
+    "pts": {
+     "Shai Gilgeous-Alexander": {
+      "line": 33.5,
+      "books": 8,
+      "low": 33.5,
+      "high": 34.5
+     },
+     "Deni Avdija": {
+      "line": 22.5,
+      "books": 7,
+      "low": 22.5,
+      "high": 22.5
+     },
+     "Damian Lillard": {
+      "line": 19.5,
+      "books": 7,
+      "low": 19.5,
+      "high": 20.5
+     },
+     "Jared McCain": {
+      "line": 15.5,
+      "books": 7,
+      "low": 15.5,
+      "high": 16.5
+     },
+     "Toumani Camara": {
+      "line": 12.5,
+      "books": 7,
+      "low": 12.5,
+      "high": 12.5
+     },
+     "Jrue Holiday": {
+      "line": 12.5,
+      "books": 6,
+      "low": 11.5,
+      "high": 12.5
+     },
+     "Donovan Clingan": {
+      "line": 10.5,
+      "books": 7,
+      "low": 10.5,
+      "high": 11.5
+     },
+     "Scoot Henderson": {
+      "line": 10.5,
+      "books": 5,
+      "low": 10.5,
+      "high": 10.5
+     },
+     "Aday Mara": {
+      "line": 9.5,
+      "books": 7,
+      "low": 9.5,
+      "high": 10.5
+     },
+     "Isaiah Hartenstein": {
+      "line": 9.5,
+      "books": 8,
+      "low": 9.5,
+      "high": 9.5
+     },
+     "Kenrich Williams": {
+      "line": 8.5,
+      "books": 8,
+      "low": 8.5,
+      "high": 8.5
+     },
+     "Bennett Stirtz": {
+      "line": 8.5,
+      "books": 6,
+      "low": 8.5,
+      "high": 8.5
+     },
+     "Sidy Cissoko": {
+      "line": 8.5,
+      "books": 8,
+      "low": 8.5,
+      "high": 8.5
+     },
+     "Alex Caruso": {
+      "line": 7.5,
+      "books": 8,
+      "low": 6.5,
+      "high": 7.5
+     },
+     "Robert Williams": {
+      "line": 4.5,
+      "books": 3,
+      "low": 4.5,
+      "high": 5.5
+     }
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import "./style.css";
+import Layout from "./components/Layout";
+import Dashboard from "./pages/Dashboard";
+import HowItWorks from "./pages/HowItWorks";
+import Landing from "./pages/Landing";
+import Leaderboard from "./pages/Leaderboard";
+import NotFound from "./pages/NotFound";
+import Player from "./pages/Player";
+import Props from "./pages/Props";
+
+ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<Landing />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="players/:slug" element={<Player />} />
+          <Route path="props" element={<Props />} />
+          <Route path="how-it-works" element={<HowItWorks />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  </React.StrictMode>,
+);
