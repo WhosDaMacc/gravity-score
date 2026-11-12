@@ -4,9 +4,13 @@ today's sportsbook prop lines within PROPS_DAILY_CREDIT_BUDGET.
 
 Run from stat-miner-app/ (each morning, before games):
 
-    python scripts/refresh_props.py            # today; free if already fetched
-    python scripts/refresh_props.py --force    # refetch today's lines (spends credits)
+    python scripts/refresh_props.py                 # NBA today; free if already fetched
+    python scripts/refresh_props.py --sport nfl     # NFL today
+    python scripts/refresh_props.py --force         # refetch today's lines (spends credits)
     python scripts/refresh_props.py --logs-only
+
+The daily credit budget is shared across sports: an NFL refresh only spends
+what is left after the NBA lines already saved for that day (and vice versa).
 """
 
 import argparse
@@ -20,28 +24,31 @@ from dotenv import load_dotenv  # noqa: E402
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from backend.core import props  # noqa: E402
-from backend.data_sources import espn_boxscores as espn  # noqa: E402
+from backend.core.props import _sport_config  # noqa: E402
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--sport", default="nba", choices=list(props.SPORTS),
+                        help="which sport's board to refresh (default: nba)")
     parser.add_argument("--force", action="store_true", help="refetch lines even if today's are saved")
     parser.add_argument("--logs-only", action="store_true", help="only update game logs")
     args = parser.parse_args()
 
+    espn = _sport_config(args.sport)["espn"]
     today = espn.today_eastern()
     season = espn.season_for(today)
     for s in (espn.previous_season(season), season):
         store = espn.sync_season(s, force=True)
-        print(f"Game logs {s}: {len(store['games'])} games, through {store['synced_through']}")
+        print(f"Game logs {args.sport} {s}: {len(store['games'])} games, through {store['synced_through']}")
 
     if args.logs_only:
         return
 
-    result = props.refresh_lines(today, force=args.force)
+    result = props.refresh_lines(today, force=args.force, sport=args.sport)
     markets = sorted({m for e in result["events"] for m in e["markets"]})
     print(
-        f"Lines {result['date']}: {len(result['events'])} games, markets {markets or 'none'}, "
+        f"Lines {args.sport} {result['date']}: {len(result['events'])} games, markets {markets or 'none'}, "
         f"spent {result['credits_spent']} credits, {result['credits_remaining']} remaining"
     )
 

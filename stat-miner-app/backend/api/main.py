@@ -170,13 +170,19 @@ def _parse_day(value: str | None) -> date | None:
 
 
 @app.get("/props/board")
-def get_props_board(day: str | None = Query(default=None, alias="date")) -> Dict[str, Any]:
+def get_props_board(
+    day: str | None = Query(default=None, alias="date"),
+    sport: str = Query(default="nba"),
+) -> Dict[str, Any]:
     """
-    Tonight's NBA slate with saved sportsbook prop lines and each player's game
+    Tonight's slate with saved sportsbook prop lines and each player's game
     logs, for the props heat map. Never spends Odds API credits.
+    sport: "nba" (default, keeps existing callers working) or "nfl".
     """
+    if sport.lower() not in {"nba", "nfl"}:
+        raise HTTPException(status_code=400, detail="sport must be one of: nba, nfl")
     try:
-        return props.build_board(_parse_day(day))
+        return props.build_board(_parse_day(day), sport=sport.lower())
     except BoxScoreError as exc:
         raise HTTPException(status_code=503, detail="Game data is temporarily unavailable.") from exc
 
@@ -185,13 +191,17 @@ def get_props_board(day: str | None = Query(default=None, alias="date")) -> Dict
 def refresh_props_lines(
     day: str | None = Query(default=None, alias="date"),
     force: bool = False,
+    sport: str = Query(default="nba"),
 ) -> Dict[str, Any]:
     """
-    Fetch the day's prop lines from The Odds API within PROPS_DAILY_CREDIT_BUDGET.
+    Fetch the day's prop lines from The Odds API within the shared
+    PROPS_DAILY_CREDIT_BUDGET (NBA + NFL draw from the same daily pool).
     Re-running the same day is free unless force=true.
     """
+    if sport.lower() not in {"nba", "nfl"}:
+        raise HTTPException(status_code=400, detail="sport must be one of: nba, nfl")
     try:
-        result = props.refresh_lines(_parse_day(day), force=force)
+        result = props.refresh_lines(_parse_day(day), force=force, sport=sport.lower())
     except OddsProviderError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return {k: v for k, v in result.items() if k != "events"} | {

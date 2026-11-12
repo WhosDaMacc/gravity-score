@@ -2,9 +2,13 @@ import type { CSSProperties } from "react";
 
 export type StatKey =
   | "pts" | "reb" | "ast" | "fg3m" | "pra" | "pr" | "pa" | "ra"
-  | "fg3a" | "fga" | "fgm" | "fta" | "stl" | "blk" | "stocks" | "tov";
+  | "fg3a" | "fga" | "fgm" | "fta" | "stl" | "blk" | "stocks" | "tov"
+  | "pass_yds" | "rush_yds" | "rec_yds" | "receptions" | "pass_tds"
+  | "rush_rec_yds";
 
-type LogField = "min" | "pts" | "reb" | "ast" | "fgm" | "fga" | "fg3m" | "fg3a" | "ftm" | "fta" | "stl" | "blk" | "tov";
+type LogField = "min" | "pts" | "reb" | "ast" | "fgm" | "fga" | "fg3m" | "fg3a" | "ftm" | "fta" | "stl" | "blk" | "tov"
+  | "pass_yds" | "pass_tds" | "pass_int" | "rush_att" | "rush_yds" | "rush_tds"
+  | "rec" | "rec_yds" | "rec_tds" | "targets" | "fum_lost";
 
 export const STATS: { key: StatKey; label: string; name: string; parts: LogField[] }[] = [
   { key: "pts", label: "PTS", name: "Points", parts: ["pts"] },
@@ -25,7 +29,26 @@ export const STATS: { key: StatKey; label: string; name: string; parts: LogField
   { key: "tov", label: "TOV", name: "Turnovers", parts: ["tov"] },
 ];
 
-export const STAT_BY_KEY = Object.fromEntries(STATS.map((s) => [s.key, s])) as Record<StatKey, (typeof STATS)[number]>;
+export const NFL_STATS: { key: StatKey; label: string; name: string; parts: LogField[] }[] = [
+  { key: "pass_yds", label: "PASS YDS", name: "Passing yards", parts: ["pass_yds"] },
+  { key: "rush_yds", label: "RUSH YDS", name: "Rushing yards", parts: ["rush_yds"] },
+  { key: "rec_yds", label: "REC YDS", name: "Receiving yards", parts: ["rec_yds"] },
+  { key: "receptions", label: "REC", name: "Receptions", parts: ["rec"] },
+  { key: "pass_tds", label: "PASS TD", name: "Passing touchdowns", parts: ["pass_tds"] },
+  { key: "rush_rec_yds", label: "RUSH+REC", name: "Rushing + receiving yards", parts: ["rush_yds", "rec_yds"] },
+];
+
+export const STAT_BY_KEY = Object.fromEntries(
+  [...STATS, ...NFL_STATS].map((s) => [s.key, s]),
+) as Record<StatKey, (typeof STATS)[number]>;
+
+/** Stat tabs per sport; the board's `sport` selects which set renders. */
+export const SPORT_STATS: Record<string, (typeof STATS)[number][]> = {
+  nba: STATS,
+  nfl: NFL_STATS,
+};
+
+export const SPORT_LABELS: Record<string, string> = { nba: "NBA", nfl: "NFL" };
 
 export type PropLine = { line: number; books: number; low: number; high: number };
 type LogRow = [string, string, number, number, ...number[]];
@@ -54,12 +77,13 @@ export type PropsGame = {
 
 export type PropsBoard = {
   date: string;
+  sport: string;
   season: string;
   log_fields: string[];
   games: PropsGame[];
   players: PropsPlayer[];
   lines: { fetched_at: string; credits_remaining: number | null; markets: StatKey[] } | null;
-  defense: DefenseProfile;
+  defense: DefenseProfile | null;
   unmatched_props: string[];
   logs_through: string | null;
 };

@@ -10,7 +10,7 @@ export type Sport = {
 
 export const SPORTS: Sport[] = [
   { key: "nba", label: "NBA", name: "NBA", live: true, demoTiles: "NBA", plan: "" },
-  { key: "nfl", label: "NFL", name: "NFL", live: false, plan: "Target share, air yards and red-zone usage for player props." },
+  { key: "nfl", label: "NFL", name: "NFL", live: true, plan: "Target share, air yards and red-zone usage for player props." },
   { key: "mlb", label: "MLB", name: "MLB", live: false, plan: "Strikeout, hits and total-bases props against tonight's starter." },
   { key: "nhl", label: "NHL", name: "NHL", live: false, plan: "Shots on goal and points props with line-mate context." },
   { key: "ncaab", label: "NCAAB", name: "College basketball", live: false, plan: "Gravity Score and props for college hoops." },

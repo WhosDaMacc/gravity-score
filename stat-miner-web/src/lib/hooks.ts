@@ -31,8 +31,8 @@ export function usePlayer(slug: string, season: string) {
   return useAsync<PlayerProfile>(() => loadPlayer(slug, season), [slug, season]);
 }
 
-export function usePropsBoard() {
-  return useAsync<PropsBoard>(() => getJson<PropsBoard>("/props/board"), []);
+export function usePropsBoard(sport: string) {
+  return useAsync<PropsBoard>(() => getJson<PropsBoard>(`/props/board?sport=${sport}`), [sport]);
 }
 
 export function useDocumentTitle(title: string) {

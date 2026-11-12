@@ -1,0 +1,296 @@
+{
+ "date": "2026-11-12",
+ "sport": "nfl",
+ "fetched_at": "2026-11-12T02:22:56+00:00",
+ "budget": 16,
+ "credits_spent": 6,
+ "credits_remaining": 493,
+ "events": [
+  {
+   "event_id": "74d39e19225caf211ad2c8eb4110179f",
+   "home_team": "New York Giants",
+   "away_team": "Washington Commanders",
+   "commence_time": "2026-11-13T01:15:00Z",
+   "markets": [
+    "pass_yds",
+    "rush_yds",
+    "rec_yds",
+    "receptions",
+    "pass_tds",
+    "rush_rec_yds"
+   ],
+   "props": {
+    "pass_tds": {
+     "Jayden Daniels": {
+      "line": 1.5,
+      "books": 6,
+      "low": 1.5,
+      "high": 1.5
+     },
+     "J.J. McCarthy": {
+      "line": 1.5,
+      "books": 6,
+      "low": 1.5,
+      "high": 1.5
+     }
+    },
+    "pass_yds": {
+     "J.J. McCarthy": {
+      "line": 210.5,
+      "books": 8,
+      "low": 204.5,
+      "high": 215.5
+     },
+     "Jayden Daniels": {
+      "line": 201.5,
+      "books": 9,
+      "low": 167.5,
+      "high": 202.5
+     }
+    },
+    "rec_yds": {
+     "Malik Nabers": {
+      "line": 67.5,
+      "books": 8,
+      "low": 66.5,
+      "high": 69.5
+     },
+     "Isaiah Likely": {
+      "line": 48.5,
+      "books": 8,
+      "low": 47.5,
+      "high": 49.5
+     },
+     "Antonio Williams": {
+      "line": 37.5,
+      "books": 8,
+      "low": 36.5,
+      "high": 39.5
+     },
+     "Stefon Diggs": {
+      "line": 38.5,
+      "books": 8,
+      "low": 36.5,
+      "high": 39.5
+     },
+     "Chig Okonkwo": {
+      "line": 34.5,
+      "books": 8,
+      "low": 33.5,
+      "high": 34.5
+     },
+     "Treylon Burks": {
+      "line": 26.5,
+      "books": 8,
+      "low": 26.5,
+      "high": 30.5
+     },
+     "Malachi Fields": {
+      "line": 25.5,
+      "books": 8,
+      "low": 24.5,
+      "high": 27.5
+     },
+     "Darnell Mooney": {
+      "line": 15.5,
+      "books": 8,
+      "low": 14.5,
+      "high": 16.5
+     },
+     "Rachaad White": {
+      "line": 12.5,
+      "books": 8,
+      "low": 12.5,
+      "high": 13.5
+     },
+     "Austin Ekeler": {
+      "line": 8.5,
+      "books": 7,
+      "low": 8.5,
+      "high": 9.5
+     },
+     "Devin Singletary": {
+      "line": 8.5,
+      "books": 8,
+      "low": 7.5,
+      "high": 9.5
+     },
+     "Cam Skattebo": {
+      "line": 7.5,
+      "books": 8,
+      "low": 7.5,
+      "high": 7.5
+     },
+     "Van Jefferson": {
+      "line": 7.5,
+      "books": 6,
+      "low": 6.5,
+      "high": 9.5
+     },
+     "Theo Johnson": {
+      "line": 5.5,
+      "books": 8,
+      "low": 3.5,
+      "high": 5.5
+     },
+     "John Bates": {
+      "line": 0.5,
+      "books": 1,
+      "low": 0.5,
+      "high": 0.5
+     }
+    },
+    "receptions": {
+     "Malik Nabers": {
+      "line": 5.5,
+      "books": 7,
+      "low": 5.5,
+      "high": 5.5
+     },
+     "Isaiah Likely": {
+      "line": 4.5,
+      "books": 8,
+      "low": 4.5,
+      "high": 4.5
+     },
+     "Stefon Diggs": {
+      "line": 3.5,
+      "books": 7,
+      "low": 3.5,
+      "high": 4.5
+     },
+     "Chig Okonkwo": {
+      "line": 3.5,
+      "books": 7,
+      "low": 3.5,
+      "high": 4.5
+     },
+     "Antonio Williams": {
+      "line": 3.5,
+      "books": 6,
+      "low": 3.5,
+      "high": 3.5
+     },
+     "Rachaad White": {
+      "line": 2.5,
+      "books": 6,
+      "low": 2.5,
+      "high": 2.5
+     },
+     "Malachi Fields": {
+      "line": 2.5,
+      "books": 6,
+      "low": 2.5,
+      "high": 2.5
+     },
+     "Treylon Burks": {
+      "line": 2.5,
+      "books": 7,
+      "low": 2.0,
+      "high": 2.5
+     },
+     "Darnell Mooney": {
+      "line": 1.5,
+      "books": 8,
+      "low": 1.5,
+      "high": 1.5
+     },
+     "Austin Ekeler": {
+      "line": 1.5,
+      "books": 8,
+      "low": 1.5,
+      "high": 1.5
+     },
+     "Devin Singletary": {
+      "line": 1.5,
+      "books": 6,
+      "low": 1.5,
+      "high": 1.5
+     },
+     "Cam Skattebo": {
+      "line": 1.5,
+      "books": 6,
+      "low": 1.5,
+      "high": 1.5
+     },
+     "Van Jefferson": {
+      "line": 1.5,
+      "books": 4,
+      "low": 1.5,
+      "high": 1.5
+     },
+     "Theo Johnson": {
+      "line": 0.5,
+      "books": 6,
+      "low": 0.5,
+      "high": 0.5
+     }
+    },
+    "rush_rec_yds": {
+     "Cam Skattebo": {
+      "line": 63.5,
+      "books": 6,
+      "low": 61.5,
+      "high": 63.5
+     },
+     "Rachaad White": {
+      "line": 53.5,
+      "books": 6,
+      "low": 52.5,
+      "high": 55.5
+     },
+     "Austin Ekeler": {
+      "line": 41.5,
+      "books": 6,
+      "low": 40.5,
+      "high": 43.5
+     },
+     "Devin Singletary": {
+      "line": 36.5,
+      "books": 6,
+      "low": 34.5,
+      "high": 36.5
+     }
+    },
+    "rush_yds": {
+     "Cam Skattebo": {
+      "line": 51.5,
+      "books": 8,
+      "low": 50.5,
+      "high": 52.5
+     },
+     "Jayden Daniels": {
+      "line": 37.5,
+      "books": 8,
+      "low": 34.5,
+      "high": 39.5
+     },
+     "Rachaad White": {
+      "line": 37.5,
+      "books": 8,
+      "low": 36.5,
+      "high": 39.5
+     },
+     "Austin Ekeler": {
+      "line": 29.5,
+      "books": 8,
+      "low": 27.5,
+      "high": 29.5
+     },
+     "Devin Singletary": {
+      "line": 23.5,
+      "books": 8,
+      "low": 23.5,
+      "high": 24.5
+     },
+     "J.J. McCarthy": {
+      "line": 15.5,
+      "books": 7,
+      "low": 14.5,
+      "high": 15.5
+     }
+    }
+   }
+  }
+ ]
+}
