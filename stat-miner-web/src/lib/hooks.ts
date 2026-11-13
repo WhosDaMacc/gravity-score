@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, getJson, loadLeaderboard, loadPlayer, toApiError, type Leaderboard, type PlayerProfile } from "./api";
-import type { PropsBoard } from "./props";
+import type { KalshiBoard, PropsBoard } from "./props";
 
 type AsyncState<T> = { data?: T; error?: ApiError; loading: boolean };
 
@@ -33,6 +33,10 @@ export function usePlayer(slug: string, season: string) {
 
 export function usePropsBoard() {
   return useAsync<PropsBoard>(() => getJson<PropsBoard>("/props/board"), []);
+}
+
+export function useKalshi() {
+  return useAsync<KalshiBoard>(() => getJson<KalshiBoard>("/props/kalshi"), []);
 }
 
 export function useDocumentTitle(title: string) {

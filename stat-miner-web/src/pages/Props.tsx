@@ -1,8 +1,11 @@
-﻿import React, { Fragment, useMemo, useState } from "react";
+﻿import React, { Fragment, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import BetModal, { type BetTarget } from "../components/BetModal";
+import ParlaySlip from "../components/ParlaySlip";
 import { ErrorState, Spinner } from "../components/StatusViews";
 import { ordinal } from "../lib/format";
-import { useDocumentTitle, usePropsBoard } from "../lib/hooks";
+import { useDocumentTitle, useKalshi, usePropsBoard } from "../lib/hooks";
+import { legId, parlay, useParlay, type ParlayLeg } from "../lib/parlay";
 import {
   analyze,
   defaultLine,
@@ -29,6 +32,8 @@ import {
 } from "../lib/props";
 
 type SortKey = "prob" | "clear" | "line" | "proj" | "matchup" | WindowKey;
+
+const STAT_TABLE_COLUMNS = 13;
 type Row = { player: PropsPlayer; stat: StatKey; book?: PropLine; analysis: PropAnalysis; edited: boolean };
 
 const pct = (rate: number | null) => (rate === null ? "—" : `${Math.round(rate * 100)}%`);
@@ -224,6 +229,9 @@ const Props: React.FC = () => {
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [includeNoLine, setIncludeNoLine] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [betTarget, setBetTarget] = useState<BetTarget | null>(null);
+  const { data: kalshi } = useKalshi();
+  const legs = useParlay();
 
   const update = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -245,10 +253,10 @@ const Props: React.FC = () => {
     [data, gameId, query],
   );
 
-  const makeRow = (player: PropsPlayer, stat: StatKey): Row => {
+  const makeRow = (player: PropsPlayer, stat: StatKey, lineOverrides = overrides): Row => {
     const logs = logsById.get(player.id) ?? [];
     const book = player.lines[stat];
-    const override = overrides[`${player.id}:${stat}`];
+    const override = lineOverrides[`${player.id}:${stat}`];
     const line = override ?? book?.line ?? defaultLine(logs, stat);
     const matchup = data ? matchupFor(data.defense, player.opp, "ALL", stat) : null;
     const group = positionGroup(player.pos);
@@ -272,13 +280,93 @@ const Props: React.FC = () => {
 
   const statHasLines = (stat: StatKey) => (data?.players ?? []).some((p) => p.lines[stat]);
 
-  const statRows = useMemo(() => {
+  // Row order is fixed when the sort, stat or filters change, not while a line
+  // is being edited; otherwise the edited row jumps away mid-typing.
+  const overridesRef = useRef(overrides);
+  overridesRef.current = overrides;
+
+  const rowOrder = useMemo(() => {
     if (!data || view === "best") return [];
     const onlyBook = statHasLines(view) && !includeNoLine;
-    const rows = players.filter((p) => !onlyBook || p.lines[view]).map((p) => makeRow(p, view));
+    const rows = players.filter((p) => !onlyBook || p.lines[view]).map((p) => makeRow(p, view, overridesRef.current));
     const dir = sort.asc ? 1 : -1;
-    return rows.sort((a, b) => dir * (sortValue(a, sort.key) - sortValue(b, sort.key)));
-  }, [data, view, players, sort, overrides, includeNoLine, logsById]);
+    return rows.sort((a, b) => dir * (sortValue(a, sort.key) - sortValue(b, sort.key))).map((r) => r.player);
+  }, [data, view, players, sort, includeNoLine, logsById]);
+
+  const statRows = useMemo(
+    () => (view === "best" ? [] : rowOrder.map((p) => makeRow(p, view))),
+    [rowOrder, view, overrides],
+  );
+
+  const playersById = useMemo(() => new Map((data?.players ?? []).map((p) => [p.id, p])), [data]);
+
+  const kalshiMarkets = (playerId: string, stat: StatKey) => kalshi?.players[playerId]?.[stat] ?? [];
+
+  const openBet = (row: Row) => {
+    if (!data) return;
+    const { player, stat, analysis } = row;
+    setBetTarget({
+      name: player.name,
+      stat,
+      line: analysis.line,
+      offers: player.lines[stat]?.offers ?? [],
+      kalshi: kalshiMarkets(player.id, stat),
+      leg: {
+        playerId: player.id, name: player.name, team: player.team, opp: player.opp, stat,
+        line: analysis.line, side: analysis.prob !== null && analysis.prob < 0.5 ? "Under" : "Over",
+        date: data.date, probOver: analysis.prob,
+      },
+    });
+  };
+
+  const addToParlay = (row: Row) => {
+    if (!data) return;
+    const prob = row.analysis.prob;
+    parlay.add({
+      date: data.date,
+      playerId: row.player.id,
+      name: row.player.name,
+      team: row.player.team,
+      opp: row.player.opp,
+      stat: row.stat,
+      line: row.analysis.line,
+      side: prob !== null && prob < 0.5 ? "Under" : "Over",
+      probOver: prob,
+    });
+  };
+
+  const legProb = (leg: ParlayLeg): number | null => {
+    const player = data && leg.date === data.date ? playersById.get(leg.playerId) : undefined;
+    if (!player) return leg.probOver;
+    return makeRow(player, leg.stat, { [`${player.id}:${leg.stat}`]: leg.line }).analysis.prob;
+  };
+
+  const inParlay = (row: Row) => !!data && legs.some((l) => l.id === legId(data.date, row.player.id, row.stat));
+
+  const actionsCell = (row: Row) => (
+    <td className="px-2 py-1">
+      <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={() => openBet(row)}
+          className="rounded-md border border-emerald-600/70 bg-emerald-500/10 px-2 py-1 text-xs font-bold text-emerald-200 hover:bg-emerald-500/20"
+        >
+          Bet
+        </button>
+        <button
+          type="button"
+          onClick={() => addToParlay(row)}
+          title={inParlay(row) ? "In your phantom parlay (click to update the line)" : "Add to phantom parlay"}
+          aria-label={`Add ${row.player.name} ${STAT_BY_KEY[row.stat].label} to phantom parlay`}
+          className={`rounded-md border px-2 py-1 text-xs font-bold ${
+            inParlay(row) ? "border-violet-400 bg-violet-500/25 text-violet-100" : "border-slate-600 text-slate-300 hover:bg-slate-800"
+          }`}
+        >
+          {inParlay(row) ? "✓" : "+"}
+        </button>
+      </div>
+    </td>
+  );
 
   const best = useMemo(() => {
     if (!data) return { overs: [] as Row[], unders: [] as Row[] };
@@ -334,8 +422,6 @@ const Props: React.FC = () => {
     );
   };
 
-  const statColumns = 10;
-
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -387,8 +473,8 @@ const Props: React.FC = () => {
 
           {view === "best" ? (
             <div className="grid gap-6 xl:grid-cols-2">
-              <BestTable title="Most likely to clear" tone="emerald" rows={best.overs} playerCell={playerCell} expanded={expanded} />
-              <BestTable title="Most likely to stay under" tone="rose" rows={best.unders} playerCell={playerCell} expanded={expanded} />
+              <BestTable title="Most likely to clear" tone="emerald" rows={best.overs} playerCell={playerCell} actionsCell={actionsCell} expanded={expanded} />
+              <BestTable title="Most likely to stay under" tone="rose" rows={best.unders} playerCell={playerCell} actionsCell={actionsCell} expanded={expanded} />
               {best.overs.length + best.unders.length === 0 && (
                 <p className="text-sm text-slate-400 xl:col-span-2">
                   No sportsbook lines are loaded for these games yet. Pick a stat tab to rate players against their season averages, or set your own lines.
@@ -424,6 +510,7 @@ const Props: React.FC = () => {
                       {sortHeader("proj", "Proj", "hidden sm:table-cell", "Matchup-adjusted projection")}
                       {sortHeader("clear", "Hit %", "hidden sm:table-cell", "Blended hit rate vs this line")}
                       {sortHeader("prob", "Prob", "", "Chance to go over vs tonight's opponent")}
+                      <th scope="col" className="px-2 py-2"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/70">
@@ -442,10 +529,11 @@ const Props: React.FC = () => {
                           </td>
                           <td className="hidden px-2 py-1 text-center font-semibold tabular-nums text-slate-300 sm:table-cell">{pct(row.analysis.clear)}</td>
                           <ProbCell prob={row.analysis.prob} />
+                          {actionsCell(row)}
                         </tr>
                         {expanded === rowKey(row) && (
                           <tr className="bg-slate-900/60">
-                            <td colSpan={statColumns + 2}><MatchupDetail row={row} /></td>
+                            <td colSpan={STAT_TABLE_COLUMNS}><MatchupDetail row={row} /></td>
                           </tr>
                         )}
                       </Fragment>
@@ -460,6 +548,25 @@ const Props: React.FC = () => {
           <Methodology />
         </>
       )}
+
+      {betTarget && <BetModal target={betTarget} onClose={() => setBetTarget(null)} />}
+      <ParlaySlip
+        legs={legs}
+        boardDate={data.date}
+        probFor={legProb}
+        marketsFor={(leg) => kalshiMarkets(leg.playerId, leg.stat)}
+        onBet={(leg) => {
+          const player = playersById.get(leg.playerId);
+          setBetTarget({
+            name: leg.name,
+            stat: leg.stat,
+            line: leg.line,
+            offers: player?.lines[leg.stat]?.offers ?? [],
+            kalshi: kalshiMarkets(leg.playerId, leg.stat),
+            leg: { ...leg, probOver: legProb(leg) },
+          });
+        }}
+      />
     </div>
   );
 };
@@ -513,7 +620,8 @@ const BestTable: React.FC<{
   rows: Row[];
   expanded: string | null;
   playerCell: (row: Row, extra?: string) => React.ReactNode;
-}> = ({ title, tone, rows, expanded, playerCell }) => {
+  actionsCell: (row: Row) => React.ReactNode;
+}> = ({ title, tone, rows, expanded, playerCell, actionsCell }) => {
   if (!rows.length) return null;
   return (
     <section className="space-y-2">
@@ -529,6 +637,7 @@ const BestTable: React.FC<{
               ))}
               <th scope="col" className="hidden px-1 py-2 text-center sm:table-cell">Hit %</th>
               <th scope="col" className="px-2 py-2 text-right">Prob</th>
+              <th scope="col" className="px-2 py-2"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/70">
@@ -542,10 +651,11 @@ const BestTable: React.FC<{
                   ))}
                   <td className="hidden px-1 py-1 text-center font-semibold tabular-nums text-slate-300 sm:table-cell">{pct(row.analysis.clear)}</td>
                   <ProbCell prob={row.analysis.prob} />
+                  {actionsCell(row)}
                 </tr>
                 {expanded === rowKey(row) && (
                   <tr className="bg-slate-900/60">
-                    <td colSpan={7}><MatchupDetail row={row} compact /></td>
+                    <td colSpan={8}><MatchupDetail row={row} compact /></td>
                   </tr>
                 )}
               </Fragment>

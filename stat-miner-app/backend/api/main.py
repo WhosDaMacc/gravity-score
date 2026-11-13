@@ -20,7 +20,8 @@ from backend.core.adapters.team_sport_adapter import TeamSportAdapter
 from backend.core.manager import SportManager
 from backend.core.value_models import ValueScore
 from backend.core import nba_gravity, props
-from backend.data_sources.espn_boxscores import BoxScoreError
+from backend.data_sources.espn_boxscores import STAT_FIELDS, BoxScoreError
+from backend.data_sources.kalshi import KalshiError
 from backend.data_sources.nba_stats_provider import AmbiguousPlayerError, StatsUnavailableError
 from backend.data_sources.odds_provider import (
     OddsProviderError,
@@ -179,6 +180,31 @@ def get_props_board(day: str | None = Query(default=None, alias="date")) -> Dict
         return props.build_board(_parse_day(day))
     except BoxScoreError as exc:
         raise HTTPException(status_code=503, detail="Game data is temporarily unavailable.") from exc
+
+
+@app.get("/props/kalshi")
+def get_props_kalshi(day: str | None = Query(default=None, alias="date")) -> Dict[str, Any]:
+    """Kalshi player prop markets (prices and links) matched to the day's board players."""
+    try:
+        return props.kalshi_markets(_parse_day(day))
+    except KalshiError as exc:
+        raise HTTPException(status_code=502, detail="Kalshi is temporarily unavailable.") from exc
+    except BoxScoreError as exc:
+        raise HTTPException(status_code=503, detail="Game data is temporarily unavailable.") from exc
+
+
+@app.get("/props/results")
+def get_props_results(keys: str = Query(..., max_length=2000)) -> Dict[str, Any]:
+    """
+    Box-score lines for finished games, to grade phantom parlay legs.
+    `keys` is a comma-separated list of "<athlete id>:<YYYY-MM-DD>".
+    """
+    requests = []
+    for key in keys.split(",")[:30]:
+        athlete_id, _, day = key.strip().partition(":")
+        if athlete_id.isdigit() and _parse_day(day):
+            requests.append((athlete_id, day))
+    return {"fields": STAT_FIELDS, "results": props.game_results(requests)}
 
 
 @app.post("/props/refresh", dependencies=[Depends(require_admin)])

@@ -27,7 +27,65 @@ export const STATS: { key: StatKey; label: string; name: string; parts: LogField
 
 export const STAT_BY_KEY = Object.fromEntries(STATS.map((s) => [s.key, s])) as Record<StatKey, (typeof STATS)[number]>;
 
-export type PropLine = { line: number; books: number; low: number; high: number };
+export type Side = "Over" | "Under";
+
+export type BookOffer = { book: string; side: Side; point: number; price: number | null; link: string };
+
+export type PropLine = { line: number; books: number; low: number; high: number; offers?: BookOffer[] };
+
+export type KalshiMarket = {
+  name: string;
+  strike: number;
+  yes_ask: number | null;
+  no_ask: number | null;
+  last: number | null;
+  volume: number;
+  url: string;
+};
+
+export type KalshiBoard = {
+  date: string;
+  fetched_at: string;
+  players: Record<string, Partial<Record<StatKey, KalshiMarket[]>>>;
+};
+
+export const BOOK_NAMES: Record<string, string> = {
+  draftkings: "DraftKings",
+  fanduel: "FanDuel",
+  espnbet: "theScore Bet",
+  williamhill_us: "Caesars",
+  fanatics: "Fanatics",
+  betmgm: "BetMGM",
+  betrivers: "BetRivers",
+  betonlineag: "BetOnline",
+  prizepicks: "PrizePicks",
+  underdog: "Underdog",
+};
+
+export function americanOdds(price: number | null): string {
+  if (price === null || price === undefined) return "";
+  return price > 0 ? `+${price}` : String(price);
+}
+
+/** Fair American odds for a probability, e.g. 0.6 -> -150. */
+export function fairOdds(p: number): string {
+  if (p <= 0 || p >= 1) return "—";
+  return p >= 0.5 ? String(-Math.round((100 * p) / (1 - p))) : `+${Math.round((100 * (1 - p)) / p)}`;
+}
+
+export function sideChance(probOver: number | null, side: Side): number | null {
+  return probOver === null ? null : side === "Over" ? probOver : 1 - probOver;
+}
+
+/** Kalshi markets sit at whole-number thresholds ("20+" = over 19.5); exact match only. */
+export function kalshiFor(markets: KalshiMarket[] | undefined, line: number): KalshiMarket | undefined {
+  return markets?.find((m) => m.strike === line);
+}
+
+export function kalshiPrice(market: KalshiMarket | undefined, side: Side): number | null {
+  if (!market) return null;
+  return side === "Over" ? market.yes_ask : market.no_ask;
+}
 type LogRow = [string, string, number, number, ...number[]];
 
 export type PropsPlayer = {

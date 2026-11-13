@@ -8,6 +8,7 @@ import SportBar from "./SportBar";
 const NBA_NAV = [
   { to: "/leaderboard", label: "Leaderboard" },
   { to: "/props", label: "Props" },
+  { to: "/tracker", label: "Tracker" },
   { to: "/how-it-works", label: "How it works" },
 ];
 

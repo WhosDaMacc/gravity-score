@@ -112,6 +112,12 @@ For tonight's NBA slate, the props page shows how often each player cleared a li
 - `PROPS_DAILY_CREDIT_BUDGET` (default 16, fits the 500/month free plan) caps credits per day. Every game gets the same number of stat types, in the order of `PROPS_MARKETS` (default points, rebounds, assists, threes, PRA, ...). With 10 games and 16 credits that's points only; stats without sportsbook lines start at the player's season average and can be edited on the page.
 - **Model check:** `python scripts/backtest_props_model.py 2025-26` replays a past season with the same probability model and prints accuracy and calibration.
 
+### Betting links, phantom parlay and bet tracker
+
+- **Bet** on any prop opens Kalshi (public API, no key or credits; `GET /props/kalshi`) and sportsbook bet-slip links from the daily lines refresh (FanDuel, DraftKings, theScore Bet).
+- **+** adds a prop to the phantom parlay (saved in the browser), which shows a combined chance and grades legs after the games.
+- **`/tracker`** logs real bets (from the Bet popup, the parlay slip, or by hand), auto-grades NBA legs from stored box scores via `GET /props/results`, and shows record, profit, ROI and breakdowns. Bets are stored in the browser's localStorage; use Export/Import to back up or move devices.
+
 ## Deploying
 
 The repo needs to be on GitHub (or GitLab/Bitbucket) for both services.

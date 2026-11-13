@@ -94,8 +94,9 @@ def fetch_event_player_props(
     bookmakers: List[str],
 ) -> Tuple[Dict[str, Any], Optional[int]]:
     """
-    Player prop odds for one event. Costs one credit per market (up to 10
-    bookmakers count as a single region). Returns (event odds, credits remaining).
+    Player prop odds for one event, with bet-slip links where the book provides
+    them. Costs one credit per market (up to 10 bookmakers count as a single
+    region). Returns (event odds, credits remaining).
     """
     cfg = _get_api_config()
     url = f"{cfg['base_url']}/sports/{LEAGUE_TO_SPORT_KEY[league]}/events/{event_id}/odds"
@@ -104,6 +105,7 @@ def fetch_event_player_props(
         "markets": ",".join(markets),
         "bookmakers": ",".join(bookmakers[:10]),
         "oddsFormat": "american",
+        "includeLinks": "true",
     }
     try:
         with httpx.Client(timeout=20.0) as client:

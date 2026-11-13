@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from backend.data_sources import espn_boxscores as espn
+from backend.data_sources import kalshi
 from backend.data_sources.nba_stats_provider import slugify
 from backend.data_sources.odds_provider import fetch_event_player_props, fetch_events
 
@@ -53,8 +54,11 @@ RECENT_LOGS = 20
 BOARD_CACHE_SECONDS = 10 * 60
 LINES_DIR = Path(__file__).resolve().parent.parent / "data" / "props"
 
+KALSHI_CACHE_SECONDS = 3 * 60
+
 _refresh_lock = threading.Lock()
 _board_cache: Dict[str, Dict[str, Any]] = {}
+_kalshi_cache: Dict[str, Dict[str, Any]] = {}
 
 
 def _market_priority() -> List[str]:
@@ -90,19 +94,32 @@ def _consensus(points: List[float]) -> float:
 
 def _parse_props(event_odds: Dict[str, Any]) -> Dict[str, Dict[str, Dict[str, Any]]]:
     by_stat: Dict[str, Dict[str, List[float]]] = {}
+    offers: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
     for book in event_odds.get("bookmakers", []):
         for market in book.get("markets", []):
             stat = STAT_BY_MARKET.get(market.get("key", ""))
             if not stat:
                 continue
             for outcome in market.get("outcomes", []):
-                if outcome.get("name") != "Over" or outcome.get("point") is None:
+                side, point, player = outcome.get("name"), outcome.get("point"), outcome.get("description")
+                if side not in ("Over", "Under") or point is None or not player:
                     continue
-                by_stat.setdefault(stat, {}).setdefault(outcome["description"], []).append(float(outcome["point"]))
+                if side == "Over":
+                    by_stat.setdefault(stat, {}).setdefault(player, []).append(float(point))
+                link = outcome.get("link") or ""
+                # Some books' links need the bettor's state filled in; skip those.
+                if link and "{state}" not in link:
+                    offers.setdefault(stat, {}).setdefault(player, []).append({
+                        "book": book["key"], "side": side, "point": float(point),
+                        "price": outcome.get("price"), "link": link,
+                    })
 
     return {
         stat: {
-            player: {"line": _consensus(points), "books": len(points), "low": min(points), "high": max(points)}
+            player: {
+                "line": _consensus(points), "books": len(points), "low": min(points), "high": max(points),
+                "offers": offers.get(stat, {}).get(player, []),
+            }
             for player, points in players.items()
         }
         for stat, players in by_stat.items()
@@ -195,6 +212,64 @@ def _match_player(name: str, candidates: List[Dict[str, Any]]) -> Optional[Dict[
     first_initial = key[:1]
     loose = [p for p in candidates if p["key"].split("-")[-1] == last and p["key"][:1] == first_initial]
     return loose[0] if len(loose) == 1 else None
+
+
+def kalshi_markets(day: Optional[date] = None) -> Dict[str, Any]:
+    """
+    Kalshi player prop markets for the day's board players:
+    {"fetched_at", "players": {player_id: {stat: [market sorted by strike]}}}.
+    Raises kalshi.KalshiError if Kalshi is unreachable.
+    """
+    day = day or espn.today_eastern()
+    cached = _kalshi_cache.get(day.isoformat())
+    if cached and time.time() - cached["built_at"] < KALSHI_CACHE_SECONDS:
+        return cached["result"]
+
+    board = build_board(day)
+    by_key: Dict[str, List[str]] = {}
+    for p in board["players"]:
+        by_key.setdefault(_name_key(p["name"]), []).append(p["id"])
+
+    players: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+    unmatched = set()
+    for stat, markets in kalshi.player_prop_markets(day).items():
+        for market in markets:
+            ids = by_key.get(_name_key(market["name"]), [])
+            if len(ids) != 1:
+                unmatched.add(market["name"])
+                continue
+            players.setdefault(ids[0], {}).setdefault(stat, []).append(market)
+    for stats in players.values():
+        for markets in stats.values():
+            markets.sort(key=lambda m: m["strike"])
+
+    result = {
+        "date": day.isoformat(),
+        "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "players": players,
+        "unmatched": sorted(unmatched),
+    }
+    _kalshi_cache[day.isoformat()] = {"result": result, "built_at": time.time()}
+    return result
+
+
+def game_results(requests: List[tuple[str, str]]) -> Dict[str, Optional[List[float]]]:
+    """
+    Stored box-score line for each (athlete id, YYYY-MM-DD), keyed "id:date",
+    or None if that game isn't stored yet. Values follow espn.STAT_FIELDS.
+    """
+    seasons = sorted({espn.season_for(date.fromisoformat(d)) for _, d in requests})
+    for s in seasons:
+        try:
+            espn.sync_season(s)
+        except espn.BoxScoreError:
+            pass
+    players = espn.player_logs(seasons)
+    out: Dict[str, Optional[List[float]]] = {}
+    for athlete_id, day in requests:
+        logs = players.get(athlete_id, {}).get("logs", [])
+        out[f"{athlete_id}:{day}"] = next((log["stats"] for log in logs if log["date"] == day), None)
+    return out
 
 
 POSITION_GROUPS = ("G", "F", "C")
