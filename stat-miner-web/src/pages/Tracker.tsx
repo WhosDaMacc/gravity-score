@@ -5,6 +5,7 @@ import { useDocumentTitle, usePropsBoard } from "../lib/hooks";
 import { STAT_BY_KEY, STATS, type Side, type StatKey } from "../lib/props";
 import {
   americanToDecimal,
+  autoGrades,
   fetchResults,
   formatOdds,
   legLabel,
@@ -105,7 +106,7 @@ const Breakdown: React.FC<{ title: string; groups: [string, Row[]][] }> = ({ tit
 );
 
 const ManualEntry: React.FC = () => {
-  const { data: board } = usePropsBoard();
+  const { data: board } = usePropsBoard("nba");
   const blank = { name: "", stat: "pts" as StatKey, line: "", side: "Over" as Side, date: todayEastern() };
   const [draft, setDraft] = useState(blank);
   const [legs, setLegs] = useState<TrackedLeg[]>([]);
@@ -156,7 +157,7 @@ const ManualEntry: React.FC = () => {
               {legs.map((l, i) => (
                 <li key={i} className="flex items-center gap-2">
                   <span className="text-slate-200">{legLabel(l)}</span>
-                  <span className="text-xs text-slate-500">{l.date}{l.playerId ? "" : " · manual grading"}</span>
+                  <span className="text-xs text-slate-500">{l.date}{autoGrades(l) ? "" : " · manual grading"}</span>
                   <button type="button" onClick={() => setLegs(legs.filter((_, j) => j !== i))} className="text-slate-500 hover:text-white" aria-label="Remove leg">×</button>
                 </li>
               ))}
@@ -170,7 +171,7 @@ const ManualEntry: React.FC = () => {
 };
 
 const Tracker: React.FC = () => {
-  useDocumentTitle("Bet tracker");
+  useDocumentTitle("My bets");
   const bets = useBets();
   const [results, setResults] = useState<GameResults | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "settled">("all");
@@ -178,7 +179,7 @@ const Tracker: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const today = todayEastern();
 
-  const gradeKey = bets.flatMap((b) => b.legs).filter((l) => l.playerId && l.date < today).map((l) => `${l.playerId}:${l.date}`).sort().join(",");
+  const gradeKey = bets.flatMap((b) => b.legs).filter((l) => autoGrades(l) && l.date < today).map((l) => `${l.playerId}:${l.date}`).sort().join(",");
   useEffect(() => {
     if (!gradeKey) return;
     let alive = true;
@@ -254,9 +255,10 @@ const Tracker: React.FC = () => {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">Bet tracker</h1>
+          <h1 className="text-3xl font-black tracking-tight text-white">My bets</h1>
           <p className="text-sm text-slate-400">
-            NBA props grade themselves the day after the game. Saved in this browser; export to back up or move devices.
+            Your own bet tracker (the site&apos;s picks are on <Link to="/history" className="underline hover:text-white">Track Record</Link>).
+            NBA props grade themselves the day after the game; settle others by hand. Saved in this browser; export to back up or move devices.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold">

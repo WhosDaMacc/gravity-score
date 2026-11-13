@@ -3,6 +3,8 @@ import { getJson } from "./api";
 import { STAT_BY_KEY, type Side, type StatKey } from "./props";
 
 export type TrackedLeg = {
+  /** "nba" or "nfl"; missing means NBA. Only NBA legs auto-grade. */
+  sport?: string;
   /** ESPN athlete id; legs without one can't be auto-graded. */
   playerId?: string;
   name: string;
@@ -115,8 +117,10 @@ export type GameResults = { fields: string[]; results: Record<string, number[] |
 
 export type LegOutcome = "won" | "lost" | "push" | null;
 
+export const autoGrades = (leg: { sport?: string; playerId?: string }) => !!leg.playerId && (leg.sport ?? "nba") === "nba";
+
 export function legOutcome(leg: TrackedLeg, results: GameResults | null): LegOutcome {
-  if (!leg.playerId || !results) return null;
+  if (!autoGrades(leg) || !results) return null;
   const row = results.results[`${leg.playerId}:${leg.date}`];
   if (!row) return null;
   const value = STAT_BY_KEY[leg.stat].parts.reduce((s, part) => s + row[results.fields.indexOf(part)], 0);
@@ -149,7 +153,7 @@ function autoResult(outcomes: LegOutcome[]): Settlement["result"] {
 export async function fetchResults(allBets: TrackedBet[], today: string): Promise<GameResults> {
   const keys = [
     ...new Set(
-      allBets.flatMap((b) => b.legs).filter((l) => l.playerId && l.date < today).map((l) => `${l.playerId}:${l.date}`),
+      allBets.flatMap((b) => b.legs).filter((l) => autoGrades(l) && l.date < today).map((l) => `${l.playerId}:${l.date}`),
     ),
   ];
   const merged: GameResults = { fields: [], results: {} };

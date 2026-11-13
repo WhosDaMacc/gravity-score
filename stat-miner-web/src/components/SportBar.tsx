@@ -3,8 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { SPORTS, sportForPath } from "../lib/sports";
 
 const SportBar: React.FC = () => {
-  const { pathname } = useLocation();
-  const active = sportForPath(pathname);
+  const { pathname, search } = useLocation();
+  // On the props page the sport comes from ?sport= (NBA is the default there).
+  const active = pathname === "/props" ? (new URLSearchParams(search).get("sport") ?? "nba") : sportForPath(pathname);
   const activeRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -34,7 +35,9 @@ const SportBar: React.FC = () => {
   return (
     <nav aria-label="Sports" className="relative border-b border-slate-800/80 bg-slate-900/70">
       <div className="mx-auto flex max-w-6xl overflow-x-auto px-2 sm:px-4 [scrollbar-width:none]">
-        {SPORTS.map((s) => item(s.key, s.live ? "/" : `/sports/${s.key}`, s.label, s.live ? undefined : "soon"))}
+        {SPORTS.map((s) =>
+          item(s.key, s.live ? (s.key === "nba" ? "/" : `/props?sport=${s.key}`) : `/sports/${s.key}`, s.label, s.live ? undefined : "soon"),
+        )}
         {item("all", "/dashboard", "All sports", "demo")}
       </div>
       <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 lg:hidden" aria-hidden="true" />

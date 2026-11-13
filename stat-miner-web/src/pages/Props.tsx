@@ -18,7 +18,8 @@ import {
   positionGroup,
   spreadUsed,
   STAT_BY_KEY,
-  STATS,
+  SPORT_LABELS,
+  SPORT_STATS,
   WINDOWS,
   type GameLog,
   type HitRate,
@@ -219,10 +220,14 @@ function sortValue(row: Row, key: SortKey): number {
 }
 
 const Props: React.FC = () => {
-  useDocumentTitle("NBA props heat map");
-  const { data, loading, error, retry } = usePropsBoard();
   const [params, setParams] = useSearchParams();
-  const view = (params.get("stat") ?? "best") as StatKey | "best";
+  const sport = params.get("sport") ?? "nba";
+  const stats = SPORT_STATS[sport] ?? SPORT_STATS.nba;
+  useDocumentTitle(`${SPORT_LABELS[sport] ?? "NBA"} props heat map`);
+  const { data, loading, error, retry } = usePropsBoard(sport);
+  const viewParam = (params.get("stat") ?? "best") as StatKey | "best";
+  // A stale link can pair one sport with the other's stat tab; fall back to Best clears.
+  const view = viewParam === "best" || stats.some((s) => s.key === viewParam) ? viewParam : "best";
   const gameId = params.get("game") ?? "";
   const query = (params.get("q") ?? "").toLowerCase();
   const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: "prob", asc: false });
@@ -230,7 +235,7 @@ const Props: React.FC = () => {
   const [includeNoLine, setIncludeNoLine] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [betTarget, setBetTarget] = useState<BetTarget | null>(null);
-  const { data: kalshi } = useKalshi();
+  const { data: kalshi } = useKalshi(sport === "nba");
   const legs = useParlay();
 
   const update = (key: string, value: string | null) => {
@@ -258,9 +263,10 @@ const Props: React.FC = () => {
     const book = player.lines[stat];
     const override = lineOverrides[`${player.id}:${stat}`];
     const line = override ?? book?.line ?? defaultLine(logs, stat);
-    const matchup = data ? matchupFor(data.defense, player.opp, "ALL", stat) : null;
+    const defense = data?.defense ?? null;
+    const matchup = defense ? matchupFor(defense, player.opp, "ALL", stat) : null;
     const group = positionGroup(player.pos);
-    const posMatchup = data && group !== "ALL" ? matchupFor(data.defense, player.opp, group, stat) : null;
+    const posMatchup = defense && group !== "ALL" ? matchupFor(defense, player.opp, group, stat) : null;
     return {
       player,
       stat,
@@ -312,7 +318,7 @@ const Props: React.FC = () => {
       offers: player.lines[stat]?.offers ?? [],
       kalshi: kalshiMarkets(player.id, stat),
       leg: {
-        playerId: player.id, name: player.name, team: player.team, opp: player.opp, stat,
+        sport, playerId: player.id, name: player.name, team: player.team, opp: player.opp, stat,
         line: analysis.line, side: analysis.prob !== null && analysis.prob < 0.5 ? "Under" : "Over",
         date: data.date, probOver: analysis.prob,
       },
@@ -323,6 +329,7 @@ const Props: React.FC = () => {
     if (!data) return;
     const prob = row.analysis.prob;
     parlay.add({
+      sport,
       date: data.date,
       playerId: row.player.id,
       name: row.player.name,
@@ -429,14 +436,28 @@ const Props: React.FC = () => {
           <h1 className="text-3xl font-black tracking-tight text-white">Props heat map</h1>
           <p className="text-sm text-slate-400">
             {new Date(`${data.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} ·{" "}
-            {data.games.length} games · hit rates and matchup-adjusted chances to clear tonight&apos;s line
+            {data.games.length} games · hit rates and {sport === "nba" ? "matchup-adjusted chances" : "chances"} to clear tonight&apos;s line
           </p>
         </div>
         <LinesStatus board={data} />
       </header>
 
+      <div className="flex gap-1 rounded-2xl border border-slate-800 bg-slate-900/60 p-1">
+        {(["nba", "nfl"] as const).map((s) => (
+          <Tab
+            key={s}
+            active={sport === s}
+            onClick={() => setParams(new URLSearchParams({ sport: s }), { replace: true })}
+          >
+            {SPORT_LABELS[s]}
+          </Tab>
+        ))}
+      </div>
+
       {data.games.length === 0 ? (
-        <p className="rounded-2xl border border-slate-800 p-8 text-center text-slate-400">No NBA games today.</p>
+        <p className="rounded-2xl border border-slate-800 p-8 text-center text-slate-400">
+          No {SPORT_LABELS[sport] ?? "NBA"} games today.
+        </p>
       ) : (
         <>
           <div className="flex flex-wrap gap-2">
@@ -454,7 +475,7 @@ const Props: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex flex-wrap gap-1 rounded-2xl border border-slate-800 bg-slate-900/60 p-1">
               <Tab active={view === "best"} onClick={() => update("stat", null)}>Best clears</Tab>
-              {STATS.map((s) => (
+              {stats.map((s) => (
                 <Tab key={s.key} active={view === s.key} onClick={() => update("stat", s.key)} title={s.name}>
                   {s.label}
                   {statHasLines(s.key) && <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 align-middle" />}
@@ -545,7 +566,7 @@ const Props: React.FC = () => {
             </section>
           )}
 
-          <Methodology />
+          {sport === "nba" && <Methodology />}
         </>
       )}
 

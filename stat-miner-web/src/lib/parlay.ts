@@ -3,6 +3,8 @@ import type { Side, StatKey } from "./props";
 
 export type ParlayLeg = {
   id: string;
+  /** "nba" or "nfl"; legs saved before sports were tracked are NBA. */
+  sport?: string;
   date: string;
   playerId: string;
   name: string;

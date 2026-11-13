@@ -2,13 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { sportForPath } from "../lib/sports";
 import Logo from "./Logo";
+import PicksTicker from "./PicksTicker";
 import PlayerSearch from "./PlayerSearch";
 import SportBar from "./SportBar";
 
 const NBA_NAV = [
+  { to: "/picks", label: "Suggested Bets" },
+  { to: "/history", label: "Track Record" },
   { to: "/leaderboard", label: "Leaderboard" },
   { to: "/props", label: "Props" },
-  { to: "/tracker", label: "Tracker" },
+  { to: "/tracker", label: "My Bets" },
   { to: "/how-it-works", label: "How it works" },
 ];
 
@@ -67,6 +70,8 @@ const Layout: React.FC = () => {
             </svg>
           </button>
         </div>
+
+        <PicksTicker />
 
         {menuOpen && (
           <div className="space-y-3 border-t border-slate-800 px-4 pb-4 pt-3 md:hidden">

@@ -51,7 +51,7 @@ const LogBetForm: React.FC<Props> = ({ legs, suggest, single }) => {
   if (saved) {
     return (
       <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
-        Logged to your tracker. <Link to="/tracker" className="font-semibold underline hover:text-white">View tracker</Link>
+        Logged to My Bets. <Link to="/tracker" className="font-semibold underline hover:text-white">View my bets</Link>
       </p>
     );
   }

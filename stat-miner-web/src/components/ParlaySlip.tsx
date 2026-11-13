@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getJson } from "../lib/api";
+import { autoGrades } from "../lib/tracker";
 import LogBetForm from "./LogBetForm";
 import { parlay, type ParlayLeg } from "../lib/parlay";
 import {
@@ -27,7 +28,7 @@ const ParlaySlip: React.FC<Props> = ({ legs, boardDate, probFor, marketsFor, onB
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<Results | null>(null);
 
-  const pastKeys = legs.filter((l) => l.date < boardDate).map((l) => `${l.playerId}:${l.date}`);
+  const pastKeys = legs.filter((l) => autoGrades(l) && l.date < boardDate).map((l) => `${l.playerId}:${l.date}`);
   const keyString = [...new Set(pastKeys)].join(",");
 
   useEffect(() => {
@@ -44,6 +45,7 @@ const ParlaySlip: React.FC<Props> = ({ legs, boardDate, probFor, marketsFor, onB
   if (!legs.length) return null;
 
   const outcome = (leg: ParlayLeg): "won" | "lost" | "push" | null => {
+    if (!autoGrades(leg)) return null;
     const row = results?.results[`${leg.playerId}:${leg.date}`];
     if (!row || !results) return null;
     const value = STAT_BY_KEY[leg.stat].parts.reduce((s, part) => s + row[results.fields.indexOf(part)], 0);
@@ -163,6 +165,7 @@ const ParlaySlip: React.FC<Props> = ({ legs, boardDate, probFor, marketsFor, onB
               <LogBetForm
                 key={legs.map((l) => l.id + l.side).join("|")}
                 legs={legs.map((l) => ({
+                  sport: l.sport,
                   playerId: l.playerId, name: l.name, team: l.team, opp: l.opp, stat: l.stat,
                   line: l.line, side: l.side, date: l.date, probOver: probFor(l),
                 }))}

@@ -34,7 +34,7 @@ const SportHub: React.FC = () => {
   }, [sport]);
 
   if (!sport) return <NotFound />;
-  if (sport.live) return <Navigate to="/" replace />;
+  if (sport.live) return <Navigate to={key === "nba" ? "/" : `/props?sport=${key}`} replace />;
 
   return (
     <div className="space-y-8">
