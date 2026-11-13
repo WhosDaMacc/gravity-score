@@ -8,3 +8,34 @@
 body {
   -webkit-font-smoothing: antialiased;
 }
+
+/* Suggested-bets ticker: the track holds two copies of the item list, so
+   translating by -50% loops seamlessly. Pauses on hover or touch-hold. */
+@keyframes picks-ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.picks-ticker-track {
+  animation-name: picks-ticker-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.picks-ticker-viewport:hover .picks-ticker-track,
+.picks-ticker-viewport:active .picks-ticker-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picks-ticker-track {
+    animation: none;
+  }
+  .picks-ticker-viewport {
+    overflow-x: auto;
+  }
+}

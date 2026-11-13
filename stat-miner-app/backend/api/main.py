@@ -19,7 +19,7 @@ from backend.core.adapters.race_adapter import RaceAdapter
 from backend.core.adapters.team_sport_adapter import TeamSportAdapter
 from backend.core.manager import SportManager
 from backend.core.value_models import ValueScore
-from backend.core import nba_gravity, props
+from backend.core import nba_gravity, picks_history, props
 from backend.data_sources.espn_boxscores import BoxScoreError
 from backend.data_sources.nba_stats_provider import AmbiguousPlayerError, StatsUnavailableError
 from backend.data_sources.odds_provider import (
@@ -185,6 +185,23 @@ def get_props_board(
         return props.build_board(_parse_day(day), sport=sport.lower())
     except BoxScoreError as exc:
         raise HTTPException(status_code=503, detail="Game data is temporarily unavailable.") from exc
+
+
+@app.get("/picks/history")
+def get_picks_history(
+    sport: str = Query(default="nba"),
+) -> Dict[str, Any]:
+    """
+    Public track record of the site's own suggested bets: each day's picks
+    are snapshotted once (never regenerated) and graded against the actual
+    game logs — hit / miss / push / void — with per-day and overall hit
+    rates (pushes and voids excluded). Ensures today's snapshot exists and
+    grades any unfinal past days on the way. Never spends Odds API credits.
+    sport: "nba" (default) or "nfl".
+    """
+    if sport.lower() not in {"nba", "nfl"}:
+        raise HTTPException(status_code=400, detail="sport must be one of: nba, nfl")
+    return picks_history.history(sport.lower())
 
 
 @app.post("/props/refresh", dependencies=[Depends(require_admin)])

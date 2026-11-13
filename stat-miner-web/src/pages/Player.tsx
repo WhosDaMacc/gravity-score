@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ComponentBreakdown, StackedBar } from "../components/GravityBars";
 import PlayerSearch from "../components/PlayerSearch";
 import { DataSourceNote, ErrorState, Spinner } from "../components/StatusViews";
 import { currentSeason, fmt, ordinal, slugify, uvsTone } from "../lib/format";
-import { useDocumentTitle, useLeaderboard, usePlayer } from "../lib/hooks";
+import { useDocumentTitle, useLeaderboard, usePlayer, usePropsBoard } from "../lib/hooks";
+import { directionalHits, directionalRate, leansByPlayer, playerNameKey } from "../lib/picks";
+import type { WindowKey } from "../lib/props";
+
+const pct = (rate: number | null) => (rate === null ? "—" : `${Math.round(rate * 100)}%`);
 
 const ScoreRing: React.FC<{ uvs: number }> = ({ uvs }) => {
   const r = 52;
@@ -56,6 +60,11 @@ const Player: React.FC = () => {
   const navigate = useNavigate();
   const { data, loading, error, retry } = usePlayer(slug, season);
   const board = useLeaderboard(season);
+  const tonight = usePropsBoard("nba");
+  const leanPropsByPlayer = useMemo(
+    () => (tonight.data && tonight.data.games.length ? leansByPlayer(tonight.data) : null),
+    [tonight.data],
+  );
   const [copied, setCopied] = useState(false);
 
   const player = data?.player;
@@ -106,6 +115,21 @@ const Player: React.FC = () => {
   );
   const maxGravity = board.data?.players[0]?.gravity ?? player.gravity;
 
+  // Tonight's lean card: only for the current season, only when this player
+  // is on tonight's board with at least one qualifying prop. The board
+  // carries names while this page is keyed by slug: exact slugified-name
+  // match first, then the suffix-normalized key (playerNameKey) when it
+  // matches exactly one board player. Otherwise the card is omitted.
+  const tonightPlayer = (() => {
+    if (season !== currentSeason() || !tonight.data) return undefined;
+    const exact = tonight.data.players.find((p) => slugify(p.name) === player.slug);
+    if (exact) return exact;
+    const key = playerNameKey(player.slug);
+    const candidates = tonight.data.players.filter((p) => playerNameKey(p.name) === key);
+    return candidates.length === 1 ? candidates[0] : undefined;
+  })();
+  const leanProps = tonightPlayer ? leanPropsByPlayer?.get(tonightPlayer.id) ?? [] : [];
+
   const share = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -143,6 +167,89 @@ const Player: React.FC = () => {
           {copied ? "Link copied" : "Share"}
         </button>
       </section>
+
+      {tonightPlayer && leanProps.length > 0 && (
+        <section className="rounded-2xl border border-emerald-900/60 bg-slate-900/30 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-white">Tonight&apos;s lean</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                {tonightPlayer.team} {tonightPlayer.home ? "vs" : "@"} {tonightPlayer.opp} · every qualifying prop,
+                strongest first
+              </p>
+            </div>
+            <Link
+              to="/picks"
+              className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-emerald-950 transition-colors hover:bg-emerald-400"
+            >
+              See Suggested Bets →
+            </Link>
+          </div>
+          <ul className="mt-4 divide-y divide-slate-800/70">
+            {leanProps.map((pick, i) => (
+              <li
+                key={pick.key}
+                className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 ${
+                  i === 0 ? "rounded-xl border border-emerald-700/60 bg-emerald-950/20 px-3" : ""
+                }`}
+              >
+                <div className="min-w-[200px] flex-1">
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[0.65rem] font-black uppercase ${
+                      pick.direction === "Over" ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
+                    }`}
+                  >
+                    {pick.direction} {pick.line} {pick.statLabel}
+                  </span>
+                  <span className="ml-2 text-sm text-slate-400">{pick.statName}</span>
+                  {i === 0 && (
+                    <span className="ml-2 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-emerald-300">
+                      Strongest lean
+                    </span>
+                  )}
+                  {pick.lineSource === "book" ? (
+                    <span className="ml-1.5 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-emerald-300">
+                      Book
+                    </span>
+                  ) : (
+                    <span
+                      className="ml-1.5 rounded bg-slate-700/60 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-slate-300"
+                      title="No sportsbook line; set at the player's season average"
+                    >
+                      Avg
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-center">
+                  {(["L5", "L10", "SZN"] as WindowKey[]).map((w) => {
+                    const hr = pick.windows[w];
+                    return (
+                      <span key={w} className="text-xs tabular-nums text-slate-300">
+                        <span className="block text-[0.6rem] uppercase tracking-wider text-slate-500">{w}</span>
+                        {pct(directionalRate(hr, pick.direction))}
+                        <span className="block text-[0.6rem] text-slate-500">
+                          {directionalHits(hr, pick.direction)}/{hr.n}
+                        </span>
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-black tabular-nums text-white">{pct(pick.estimate)}</p>
+                  <p className="text-[0.6rem] uppercase tracking-wider text-slate-500">Hit est.</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-slate-500">
+            Suggestion from past hit rates — not a guarantee. Disagree with one? On{" "}
+            <Link to="/picks" className="font-semibold text-emerald-300 hover:text-emerald-200">
+              Suggested Bets
+            </Link>{" "}
+            you can fade it and take the other side.
+          </p>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-5">
         <section className="rounded-2xl border border-slate-800 bg-slate-900/30 p-6 lg:col-span-3">
